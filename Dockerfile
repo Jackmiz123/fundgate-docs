@@ -1,12 +1,11 @@
 FROM python:3.11-slim
 
-# Install LibreOffice + Microsoft core fonts (Times New Roman, Calibri, etc.)
 RUN apt-get update && apt-get install -y \
     libreoffice \
     fonts-liberation \
     fonts-crosextra-carlito \
     fonts-crosextra-caladea \
-    ttf-mscorefonts-installer \
+    fonts-dejavu \
     fontconfig \
     --no-install-recommends \
     && apt-get clean \
