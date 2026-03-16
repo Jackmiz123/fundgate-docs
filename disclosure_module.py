@@ -124,15 +124,17 @@ def _run(para, text, bold=False, italic=False, size=None, font=None):
     r = para.add_run(text)
     r.bold = bold; r.italic = italic
     sz = size or SZ
-    r.font.size = Pt(sz / 2)
     fn = font or FONT
     r.font.name = fn
-    # Set font via XML for all script types (matches sample)
+    # Set font and size via XML for all script types (matches sample)
     rPr = r._r.get_or_add_rPr()
     rFonts = OxmlElement('w:rFonts')
     for attr in ('w:ascii','w:cs','w:eastAsia','w:hAnsi'):
         rFonts.set(qn(attr), fn)
     rPr.insert(0, rFonts)
+    # Remove any existing sz/szCs set by python-docx
+    for tag in ('w:sz','w:szCs'):
+        for el in rPr.findall(qn(tag)): rPr.remove(el)
     szEl = OxmlElement('w:sz'); szEl.set(qn('w:val'), str(sz)); rPr.append(szEl)
     szCs = OxmlElement('w:szCs'); szCs.set(qn('w:val'), str(sz)); rPr.append(szCs)
     return r
@@ -164,7 +166,7 @@ def _sig_line_para(cell, after=40):
     bot.set(qn('w:val'),'single'); bot.set(qn('w:sz'),'6')
     bot.set(qn('w:color'),'000000'); bot.set(qn('w:space'),'1')
     pBdr.append(bot); pPr.append(pBdr)
-    _spacing(p, before=200, after=after)
+    _spacing(p, before=0, after=after)
     # Add a space run so the line has height
     _run(p, ' ')
     return p
@@ -392,16 +394,16 @@ def build_disclosure_bytes(data):
 
     def _add_signer(sig_cell, date_cell, name, title, spacer=False):
         if spacer:
-            sp2 = sig_cell.add_paragraph(); _spacing(sp2, before=0, after=200)
-            sp3 = date_cell.add_paragraph(); _spacing(sp3, before=0, after=200)
+            sp2 = sig_cell.add_paragraph(); _spacing(sp2, before=60, after=60)
+            sp3 = date_cell.add_paragraph(); _spacing(sp3, before=60, after=60)
         # Sig line (bottom border paragraph)
-        _sig_line_para(sig_cell, after=80)
+        _sig_line_para(sig_cell, after=40)
         lp = sig_cell.add_paragraph()
         label = f'Recipient Signature \u2014 {name}, {title}' if title else f'Recipient Signature \u2014 {name}'
-        _run(lp, label); _spacing(lp, before=0, after=0)
+        lp.alignment = WD_ALIGN_PARAGRAPH.LEFT; _run(lp, label); _spacing(lp, before=0, after=60)
         # Date line
-        _sig_line_para(date_cell, after=80)
-        dp2 = date_cell.add_paragraph(); _run(dp2, 'Date'); _spacing(dp2, before=0, after=0)
+        _sig_line_para(date_cell, after=40)
+        dp2 = date_cell.add_paragraph(); _run(dp2, 'Date'); _spacing(dp2, before=0, after=60)
 
     # Add signer 1
     _add_signer(lsig, rsig, signer1_name, signer1_title)
