@@ -295,7 +295,7 @@ class Handler(BaseHTTPRequestHandler):
                     fname     = safe_filename(data, 'docx')
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
-                self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')
+                self.send_header('Content-Disposition', f'attachment; filename="{fname}"')
                 self.send_header('Content-Length', str(len(out_bytes)))
                 self.send_header('Access-Control-Allow-Origin','*')
                 self.end_headers()
