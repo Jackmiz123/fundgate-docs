@@ -75,15 +75,39 @@ def _cell_margins(cell, top=0, bottom=0, left=0, right=0):
 
 def _col_width(cell, w):
     tc = cell._tc; tcPr = tc.get_or_add_tcPr()
+    # Remove any existing tcW elements first
+    for existing in tcPr.findall(qn('w:tcW')):
+        tcPr.remove(existing)
     tcW = OxmlElement('w:tcW'); tcW.set(qn('w:w'),str(w)); tcW.set(qn('w:type'),'dxa')
-    tcPr.append(tcW)
+    tcPr.insert(0, tcW)
 
 def _tbl_width(table, w):
     tbl = table._tbl
     tblPr = tbl.find(qn('w:tblPr'))
     if tblPr is None: tblPr = OxmlElement('w:tblPr'); tbl.insert(0,tblPr)
+    # Remove existing tblW
+    for existing in tblPr.findall(qn('w:tblW')):
+        tblPr.remove(existing)
     tblW = OxmlElement('w:tblW'); tblW.set(qn('w:w'),str(w)); tblW.set(qn('w:type'),'dxa')
     tblPr.append(tblW)
+
+def _set_tbl_grid(table, col_widths):
+    """Set tblGrid to fix column widths properly."""
+    tbl = table._tbl
+    # Remove existing tblGrid
+    for existing in tbl.findall(qn('w:tblGrid')):
+        tbl.remove(existing)
+    tblGrid = OxmlElement('w:tblGrid')
+    for w in col_widths:
+        gridCol = OxmlElement('w:gridCol')
+        gridCol.set(qn('w:w'), str(w))
+        tblGrid.append(gridCol)
+    # Insert after tblPr
+    tblPr = tbl.find(qn('w:tblPr'))
+    if tblPr is not None:
+        tblPr.addnext(tblGrid)
+    else:
+        tbl.insert(0, tblGrid)
 
 def _vcenter(cell):
     tcPr = cell._tc.get_or_add_tcPr()
@@ -212,6 +236,7 @@ def build_disclosure_bytes(data):
     # ── Header table ───────────────────────────────────────────────────────────
     ht = doc.add_table(rows=2, cols=2)
     _tbl_width(ht, W)
+    _set_tbl_grid(ht, [W//2, W//2])
     for row in ht.rows:
         for cell in row.cells:
             _col_width(cell, W//2); _add_border(cell)
@@ -263,6 +288,7 @@ def build_disclosure_bytes(data):
 
     tt = doc.add_table(rows=0, cols=2)
     _tbl_width(tt, W)
+    _set_tbl_grid(tt, [7880, 2560])
 
     def bold_row(label, amount):
         row = tt.add_row(); lc2, rc2 = row.cells
@@ -300,6 +326,7 @@ def build_disclosure_bytes(data):
     freq_word = 'Business Week' if 'week' in ach_freq.lower() else 'Business Day'
     bt = doc.add_table(rows=0, cols=2)
     _tbl_width(bt, W)
+    _set_tbl_grid(bt, [2800, 7640])
 
     def wide_row(label, build_fn):
         row = bt.add_row(); lc3, rc3 = row.cells
@@ -353,6 +380,7 @@ def build_disclosure_bytes(data):
     # Cols: sig(5100) | spacer(600) | date(4740) — from sample
     st = doc.add_table(rows=1, cols=3)
     _tbl_width(st, W)
+    _set_tbl_grid(st, [5100, 600, 4740])
     lsig, sp, rsig = st.rows[0].cells
     _col_width(lsig, 5100); _col_width(sp, 600); _col_width(rsig, 4740)
     for c in [lsig, sp, rsig]:
