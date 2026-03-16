@@ -85,11 +85,12 @@ def _tbl_width(table, w):
     tbl = table._tbl
     tblPr = tbl.find(qn('w:tblPr'))
     if tblPr is None: tblPr = OxmlElement('w:tblPr'); tbl.insert(0,tblPr)
-    # Remove existing tblW
-    for existing in tblPr.findall(qn('w:tblW')):
-        tblPr.remove(existing)
+    for existing in tblPr.findall(qn('w:tblW')): tblPr.remove(existing)
+    for existing in tblPr.findall(qn('w:tblLayout')): tblPr.remove(existing)
     tblW = OxmlElement('w:tblW'); tblW.set(qn('w:w'),str(w)); tblW.set(qn('w:type'),'dxa')
     tblPr.append(tblW)
+    tblLayout = OxmlElement('w:tblLayout'); tblLayout.set(qn('w:type'),'fixed')
+    tblPr.append(tblLayout)
 
 def _set_tbl_grid(table, col_widths):
     """Set tblGrid to fix column widths properly."""
@@ -163,7 +164,7 @@ def _sig_line_para(cell, after=40):
     bot.set(qn('w:val'),'single'); bot.set(qn('w:sz'),'6')
     bot.set(qn('w:color'),'000000'); bot.set(qn('w:space'),'1')
     pBdr.append(bot); pPr.append(pBdr)
-    _spacing(p, before=0, after=after)
+    _spacing(p, before=200, after=after)
     # Add a space run so the line has height
     _run(p, ' ')
     return p
@@ -391,15 +392,15 @@ def build_disclosure_bytes(data):
 
     def _add_signer(sig_cell, date_cell, name, title, spacer=False):
         if spacer:
-            sp2 = sig_cell.add_paragraph(); _spacing(sp2, before=60, after=60)
-            sp3 = date_cell.add_paragraph(); _spacing(sp3, before=60, after=60)
+            sp2 = sig_cell.add_paragraph(); _spacing(sp2, before=0, after=200)
+            sp3 = date_cell.add_paragraph(); _spacing(sp3, before=0, after=200)
         # Sig line (bottom border paragraph)
-        _sig_line_para(sig_cell, after=40)
+        _sig_line_para(sig_cell, after=80)
         lp = sig_cell.add_paragraph()
         label = f'Recipient Signature \u2014 {name}, {title}' if title else f'Recipient Signature \u2014 {name}'
         _run(lp, label); _spacing(lp, before=0, after=0)
         # Date line
-        _sig_line_para(date_cell, after=40)
+        _sig_line_para(date_cell, after=80)
         dp2 = date_cell.add_paragraph(); _run(dp2, 'Date'); _spacing(dp2, before=0, after=0)
 
     # Add signer 1
