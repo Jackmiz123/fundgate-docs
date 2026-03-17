@@ -82,17 +82,27 @@ def _col_width(cell, w):
     tcPr.insert(0, tcW)
 
 def _tbl_width(table, w):
+    """Set table width exactly as the sample disclosure does — tblW only, no tblLayout."""
     tbl = table._tbl
     tblPr = tbl.find(qn('w:tblPr'))
-    if tblPr is None: tblPr = OxmlElement('w:tblPr'); tbl.insert(0,tblPr)
-    # Remove elements that could interfere with width
-    for tag in ('w:tblW','w:tblLayout','w:tblLook','w:tblStyle','w:tblInd'):
+    if tblPr is None: tblPr = OxmlElement('w:tblPr'); tbl.insert(0, tblPr)
+    # Strip everything that can interfere
+    for tag in ('w:tblW','w:tblLayout','w:tblLook','w:tblStyle','w:tblInd','w:tblBorders'):
         for el in tblPr.findall(qn(tag)): tblPr.remove(el)
-    # Set width as absolute fixed
-    tblW = OxmlElement('w:tblW'); tblW.set(qn('w:w'),str(w)); tblW.set(qn('w:type'),'dxa')
+    # Set absolute width — same as sample
+    tblW = OxmlElement('w:tblW')
+    tblW.set(qn('w:type'), 'dxa')
+    tblW.set(qn('w:w'), str(w))
     tblPr.insert(0, tblW)
-    tblLayout = OxmlElement('w:tblLayout'); tblLayout.set(qn('w:type'),'fixed')
-    tblPr.append(tblLayout)
+    # Add table-level borders (same as sample — overrides cell-level for LibreOffice)
+    tblBorders = OxmlElement('w:tblBorders')
+    for side in ('top','left','bottom','right','insideH','insideV'):
+        el = OxmlElement(f'w:{side}')
+        el.set(qn('w:val'), 'single')
+        el.set(qn('w:sz'), '4')
+        el.set(qn('w:color'), 'auto')
+        tblBorders.append(el)
+    tblPr.append(tblBorders)
 
 def _set_tbl_grid(table, col_widths):
     """Set tblGrid to fix column widths properly."""
@@ -293,11 +303,11 @@ def build_disclosure_bytes(data):
 
     tt = doc.add_table(rows=0, cols=2)
     _tbl_width(tt, W)
-    _set_tbl_grid(tt, [7880, 2560])
+    _set_tbl_grid(tt, [8200, 2240])
 
     def bold_row(label, amount):
         row = tt.add_row(); lc2, rc2 = row.cells
-        _col_width(lc2, 7880); _col_width(rc2, 2560)
+        _col_width(lc2, 8200); _col_width(rc2, 2240)
         _add_border(lc2); _add_border(rc2)
         _cell_margins(lc2,top=60,bottom=60,left=120,right=80)
         _cell_margins(rc2,top=60,bottom=60,left=80,right=120)
@@ -309,7 +319,7 @@ def build_disclosure_bytes(data):
     for r in rows_spec:
         if r is None:
             row2 = tt.add_row(); lc2, rc2 = row2.cells
-            _col_width(lc2,7880); _col_width(rc2,2560)
+            _col_width(lc2, 8200); _col_width(rc2, 2240)
             _add_border(lc2); _add_border(rc2)
             _cell_margins(lc2,top=60,bottom=60,left=120,right=80)
             _cell_margins(rc2,top=60,bottom=60,left=80,right=120)
@@ -331,11 +341,11 @@ def build_disclosure_bytes(data):
     freq_word = 'Business Week' if 'week' in ach_freq.lower() else 'Business Day'
     bt = doc.add_table(rows=0, cols=2)
     _tbl_width(bt, W)
-    _set_tbl_grid(bt, [2800, 7640])
+    _set_tbl_grid(bt, [2600, 7840])
 
     def wide_row(label, build_fn):
         row = bt.add_row(); lc3, rc3 = row.cells
-        _col_width(lc3,2800); _col_width(rc3,7640)
+        _col_width(lc3, 2600); _col_width(rc3, 7840)
         _add_border(lc3); _add_border(rc3)
         _cell_margins(lc3,top=80,bottom=80,left=120,right=80)
         _cell_margins(rc3,top=80,bottom=80,left=80,right=120)
