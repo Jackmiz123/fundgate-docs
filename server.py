@@ -127,6 +127,14 @@ def fill_docx(data):
 
     # Replace the placeholder tokens with actual block XML (or empty string)
     doc = doc.replace('«SIGNER2_BLOCK_P4»',        block_p4)
+    if not two_signers:
+        block_ach = ('<w:p w:rsidR="00D3482D" w:rsidRPr="00EC45D9" '
+                     'w:rsidRDefault="00D3482D" w:rsidP="00D3482D">'
+                     '<w:pPr><w:pStyle w:val="BodyText"/>'
+                     '<w:spacing w:before="222"/><w:ind w:left="120"/></w:pPr>'
+                     '<w:r><w:rPr><w:color w:val="010202"/>'
+                     '<w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr>'
+                     '<w:t>[Attached Voided Check Here]</w:t></w:r></w:p>')
     doc = doc.replace('«SIGNER2_BLOCK_ACH»',        block_ach)
     doc = doc.replace('«SIGNER2_BLOCK_BANKLOGIN»',  block_bank)
     doc = doc.replace('«SIGNER2_BLOCK_ADDENDUM»',   block_add)

@@ -394,8 +394,13 @@ def build_disclosure_bytes(data):
 
     def _add_signer(sig_cell, date_cell, name, title, spacer=False):
         if spacer:
-            sp2 = sig_cell.add_paragraph(); _spacing(sp2, before=60, after=60)
-            sp3 = date_cell.add_paragraph(); _spacing(sp3, before=60, after=60)
+            # Non-breaking space prevents LibreOffice from collapsing the spacer
+            sp2 = sig_cell.add_paragraph()
+            _run(sp2, u' ')  # non-breaking space
+            _spacing(sp2, before=80, after=80)
+            sp3 = date_cell.add_paragraph()
+            _run(sp3, u' ')
+            _spacing(sp3, before=80, after=80)
         # Sig line (bottom border paragraph)
         _sig_line_para(sig_cell, after=40)
         lp = sig_cell.add_paragraph()
