@@ -1,188 +1,137 @@
 """
-FundGate disclosure generator — matches GA sample format exactly.
-Font: Arial 9pt throughout. Sig lines via pBdr bottom border.
-Supports: LA, FL, GA, KS, MO — 1-signer or 2-signer.
+Disclosure module — builds state CFDL disclosures as DOCX bytes.
+XML generated directly to match the GA sample disclosure exactly.
 """
+import io, zipfile, re
 from docx import Document
-from docx.shared import Pt, Twips, RGBColor
+from docx.shared import Pt, Twips
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
-import io, datetime
+from datetime import datetime
 
+# ── State config ───────────────────────────────────────────────────────────────
 DISCLOSURE_STATES = {
-    'LA': {
-        'name': 'Louisiana',
-        'statute': 'Louisiana Revised Statutes §§9:3573.1–9:3573.8 (Louisiana Commercial Financing Disclosure Law, eff. August 1, 2024)',
-        'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
-        'kansas_labels': False,
-    },
     'FL': {
         'name': 'Florida',
-        'statute': 'Florida Statutes §§559.961–559.9615 (Florida Commercial Financing Disclosure Law, eff. January 1, 2024)',
+        'statute': 'Florida Statutes §§559.961\u2013559.9615 (Florida Commercial Financing Disclosure Law, eff. January 1, 2024)',
         'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
         'kansas_labels': False,
     },
     'GA': {
         'name': 'Georgia',
-        'statute': 'Georgia SB 90 (O.C.G.A. § 10-1-393.15 et seq.)',
+        'statute': 'Georgia SB 90 (O.C.G.A. \u00a7 10-1-393.15 et seq.)',
+        'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
+        'kansas_labels': False,
+    },
+    'LA': {
+        'name': 'Louisiana',
+        'statute': 'Louisiana R.S. 9:3578.1 et seq. (Louisiana Commercial Financing Disclosure Law)',
         'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
         'kansas_labels': False,
     },
     'KS': {
         'name': 'Kansas',
-        'statute': 'Kansas SB 345 — Commercial Financing Disclosure Act (eff. July 1, 2024)',
+        'statute': 'Kansas SB 345 \u2014 Commercial Financing Disclosure Act (eff. July 1, 2024)',
         'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
         'kansas_labels': True,
     },
     'MO': {
         'name': 'Missouri',
-        'statute': 'Missouri Revised Statutes §427.300 et seq. (Commercial Financing Disclosure Law, eff. February 28, 2025)',
+        'statute': 'Missouri Revised Statutes \u00a7427.300 et seq. (Commercial Financing Disclosure Law, eff. February 28, 2025)',
         'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
         'kansas_labels': False,
     },
 }
 
-SZ = 18   # 9pt in half-points (matches sample)
-FONT = 'Arial'
-W = 10440  # usable width in twips (matches sample: 12240 - 900 - 900)
-
-def _add_border(cell):
-    tc = cell._tc; tcPr = tc.get_or_add_tcPr()
-    tcBorders = OxmlElement('w:tcBorders')
-    for side in ('top','left','bottom','right'):
-        el = OxmlElement(f'w:{side}')
-        el.set(qn('w:val'),'single'); el.set(qn('w:sz'),'8'); el.set(qn('w:color'),'000000')
-        tcBorders.append(el)
-    tcPr.append(tcBorders)
-
-def _no_border(cell):
-    tc = cell._tc; tcPr = tc.get_or_add_tcPr()
-    tcBorders = OxmlElement('w:tcBorders')
-    for side in ('top','left','bottom','right'):
-        el = OxmlElement(f'w:{side}')
-        el.set(qn('w:val'),'none'); el.set(qn('w:sz'),'0'); el.set(qn('w:color'),'FFFFFF')
-        tcBorders.append(el)
-    tcPr.append(tcBorders)
-
-def _cell_margins(cell, top=0, bottom=0, left=0, right=0):
-    tc = cell._tc; tcPr = tc.get_or_add_tcPr()
-    tcMar = OxmlElement('w:tcMar')
-    for side, val in [('top',top),('bottom',bottom),('left',left),('right',right)]:
-        el = OxmlElement(f'w:{side}'); el.set(qn('w:w'),str(val)); el.set(qn('w:type'),'dxa')
-        tcMar.append(el)
-    tcPr.append(tcMar)
-
-def _col_width(cell, w):
-    tc = cell._tc; tcPr = tc.get_or_add_tcPr()
-    # Remove any existing tcW elements first
-    for existing in tcPr.findall(qn('w:tcW')):
-        tcPr.remove(existing)
-    tcW = OxmlElement('w:tcW'); tcW.set(qn('w:w'),str(w)); tcW.set(qn('w:type'),'dxa')
-    tcPr.insert(0, tcW)
-
-def _tbl_width(table, w):
-    """Set table width exactly as the sample disclosure does — tblW only, no tblLayout."""
-    tbl = table._tbl
-    tblPr = tbl.find(qn('w:tblPr'))
-    if tblPr is None: tblPr = OxmlElement('w:tblPr'); tbl.insert(0, tblPr)
-    # Strip everything that can interfere
-    for tag in ('w:tblW','w:tblLayout','w:tblLook','w:tblStyle','w:tblInd','w:tblBorders'):
-        for el in tblPr.findall(qn(tag)): tblPr.remove(el)
-    # Set absolute width — same as sample
-    tblW = OxmlElement('w:tblW')
-    tblW.set(qn('w:type'), 'dxa')
-    tblW.set(qn('w:w'), str(w))
-    tblPr.insert(0, tblW)
-    # Add table-level borders (same as sample — overrides cell-level for LibreOffice)
-    tblBorders = OxmlElement('w:tblBorders')
-    for side in ('top','left','bottom','right','insideH','insideV'):
-        el = OxmlElement(f'w:{side}')
-        el.set(qn('w:val'), 'single')
-        el.set(qn('w:sz'), '4')
-        el.set(qn('w:color'), 'auto')
-        tblBorders.append(el)
-    tblPr.append(tblBorders)
-
-def _set_tbl_grid(table, col_widths):
-    """Set tblGrid to fix column widths properly."""
-    tbl = table._tbl
-    # Remove existing tblGrid
-    for existing in tbl.findall(qn('w:tblGrid')):
-        tbl.remove(existing)
-    tblGrid = OxmlElement('w:tblGrid')
-    for w in col_widths:
-        gridCol = OxmlElement('w:gridCol')
-        gridCol.set(qn('w:w'), str(w))
-        tblGrid.append(gridCol)
-    # Insert after tblPr
-    tblPr = tbl.find(qn('w:tblPr'))
-    if tblPr is not None:
-        tblPr.addnext(tblGrid)
-    else:
-        tbl.insert(0, tblGrid)
-
-def _vcenter(cell):
-    tcPr = cell._tc.get_or_add_tcPr()
-    vA = OxmlElement('w:vAlign'); vA.set(qn('w:val'),'center'); tcPr.append(vA)
-
-def _spacing(para, before=0, after=60):
-    pPr = para._p.get_or_add_pPr()
-    sp = OxmlElement('w:spacing')
-    sp.set(qn('w:before'),str(before)); sp.set(qn('w:after'),str(after))
-    pPr.append(sp)
-
-def _run(para, text, bold=False, italic=False, size=None, font=None):
-    r = para.add_run(text)
-    r.bold = bold; r.italic = italic
-    sz = size or SZ
-    fn = font or FONT
-    r.font.name = fn
-    # Set font and size via XML for all script types (matches sample)
-    rPr = r._r.get_or_add_rPr()
-    rFonts = OxmlElement('w:rFonts')
-    for attr in ('w:ascii','w:cs','w:eastAsia','w:hAnsi'):
-        rFonts.set(qn(attr), fn)
-    rPr.insert(0, rFonts)
-    # Remove any existing sz/szCs set by python-docx
-    for tag in ('w:sz','w:szCs'):
-        for el in rPr.findall(qn(tag)): rPr.remove(el)
-    szEl = OxmlElement('w:sz'); szEl.set(qn('w:val'), str(sz)); rPr.append(szEl)
-    szCs = OxmlElement('w:szCs'); szCs.set(qn('w:val'), str(sz)); rPr.append(szCs)
-    return r
-
 def _fmt_currency(val):
     try:
         n = float(str(val).replace('$','').replace(',','').replace('%',''))
-        return f"${n:,.2f}"
+        return f'${n:,.2f}'
     except:
         return str(val)
 
-def _fmt_date(date_str):
-    try:
-        for fmt in ('%m/%d/%Y', '%Y-%m-%d'):
-            try:
-                d = datetime.datetime.strptime(date_str.strip(), fmt)
-                return d.strftime('%B %d, %Y')
-            except: continue
-    except: pass
-    return date_str
+def _fmt_date(val):
+    if not val: return ''
+    for fmt in ('%m/%d/%Y','%m/%d/%y','%Y-%m-%d'):
+        try:
+            return datetime.strptime(str(val).strip(), fmt).strftime('%B %d, %Y')
+        except: pass
+    return str(val)
 
-def _sig_line_para(cell, after=40):
-    """Paragraph with bottom border as sig line — matches sample exactly."""
-    p = cell.add_paragraph()
-    p.clear()
-    pPr = p._p.get_or_add_pPr()
-    pBdr = OxmlElement('w:pBdr')
-    bot = OxmlElement('w:bottom')
-    bot.set(qn('w:val'),'single'); bot.set(qn('w:sz'),'6')
-    bot.set(qn('w:color'),'000000'); bot.set(qn('w:space'),'1')
-    pBdr.append(bot); pPr.append(pBdr)
-    _spacing(p, before=0, after=after)
-    # Add a space run so the line has height
-    _run(p, ' ')
-    return p
+def _n(data, key):
+    try: return float(str(data.get(key,0)).replace('$','').replace(',','').replace('%',''))
+    except: return 0.0
 
+# ── XML helpers ────────────────────────────────────────────────────────────────
+FONT = 'Arial'
+NS = 'xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:aink="http://schemas.microsoft.com/office/drawing/2016/ink" xmlns:am3d="http://schemas.microsoft.com/office/drawing/2017/model3d" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16cid="http://schemas.microsoft.com/office/word/2016/wordml/cid" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"'
+
+def _rpr(bold=False, italic=False, sz=18):
+    b = '<w:b/><w:bCs/>' if bold else '<w:b w:val="false"/><w:bCs w:val="false"/>'
+    i = '<w:i/><w:iCs/>' if italic else '<w:i w:val="false"/><w:iCs w:val="false"/>'
+    return (f'<w:rPr><w:rFonts w:ascii="{FONT}" w:cs="{FONT}" w:eastAsia="{FONT}" w:hAnsi="{FONT}"/>'
+            f'{b}{i}<w:sz w:val="{sz}"/><w:szCs w:val="{sz}"/></w:rPr>')
+
+def _ppr(before=0, after=40, jc='left', indent=None):
+    ind = f'<w:ind w:left="{indent}"/>' if indent else ''
+    return f'<w:pPr><w:spacing w:before="{before}" w:after="{after}"/><w:jc w:val="{jc}"/>{ind}</w:pPr>'
+
+def _run(text, bold=False, italic=False, sz=18):
+    # Escape XML special chars
+    text = text.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;')
+    return f'<w:r>{_rpr(bold,italic,sz)}<w:t xml:space="preserve">{text}</w:t></w:r>'
+
+def _para(runs, before=0, after=40, jc='left', indent=None):
+    return f'<w:p>{_ppr(before,after,jc,indent)}{"".join(runs)}</w:p>'
+
+TC_BORDERS = ('<w:tcBorders>'
+              '<w:top w:val="single" w:color="000000" w:sz="4"/>'
+              '<w:left w:val="single" w:color="000000" w:sz="4"/>'
+              '<w:bottom w:val="single" w:color="000000" w:sz="4"/>'
+              '<w:right w:val="single" w:color="000000" w:sz="4"/>'
+              '</w:tcBorders>')
+
+def _tcpr(w, span=1):
+    return (f'<w:tcPr><w:tcW w:type="dxa" w:w="{w}"/><w:gridSpan w:val="{span}"/>'
+            f'{TC_BORDERS}'
+            f'<w:shd w:fill="FFFFFF" w:val="clear"/>'
+            f'<w:tcMar><w:top w:type="dxa" w:w="60"/><w:left w:type="dxa" w:w="100"/>'
+            f'<w:bottom w:type="dxa" w:w="60"/><w:right w:type="dxa" w:w="100"/></w:tcMar>'
+            f'<w:vAlign w:val="top"/></w:tcPr>')
+
+TBL_BORDERS = ('<w:tblBorders>'
+               '<w:top w:val="single" w:color="auto" w:sz="4"/>'
+               '<w:left w:val="single" w:color="auto" w:sz="4"/>'
+               '<w:bottom w:val="single" w:color="auto" w:sz="4"/>'
+               '<w:right w:val="single" w:color="auto" w:sz="4"/>'
+               '<w:insideH w:val="single" w:color="auto" w:sz="4"/>'
+               '<w:insideV w:val="single" w:color="auto" w:sz="4"/>'
+               '</w:tblBorders>')
+
+def _tbl(grid_cols, rows_xml, w=10440):
+    grid = ''.join(f'<w:gridCol w:w="{c}"/>' for c in grid_cols)
+    rows = ''.join(rows_xml)
+    return (f'<w:tbl>'
+            f'<w:tblPr><w:tblW w:type="dxa" w:w="{w}"/>{TBL_BORDERS}</w:tblPr>'
+            f'<w:tblGrid>{grid}</w:tblGrid>'
+            f'{rows}</w:tbl>')
+
+def _tc(w, paras_xml, span=1):
+    return f'<w:tc>{_tcpr(w,span)}{"".join(paras_xml)}</w:tc>'
+
+def _tr(*cells):
+    return f'<w:tr>{"".join(cells)}</w:tr>'
+
+def _sig_line_para():
+    """A paragraph with bottom border as the signature line."""
+    return ('<w:p><w:pPr>'
+            '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="000000"/></w:pBdr>'
+            f'<w:spacing w:before="200" w:after="40"/>'
+            '</w:pPr>'
+            f'<w:r>{_rpr(sz=18)}<w:t xml:space="preserve"> </w:t></w:r></w:p>')
+
+# ── Main function ──────────────────────────────────────────────────────────────
 def build_disclosure_bytes(data):
     state_code = (data.get('State_of_Organization') or '').upper().strip()
     cfg = DISCLOSURE_STATES.get(state_code)
@@ -195,13 +144,9 @@ def build_disclosure_bytes(data):
     address       = (data.get('Executive_Office_Address', '') or '').upper()
     date_display  = _fmt_date(data.get('Agreement_Date', ''))
 
-    def _n(key):
-        try: return float(str(data.get(key,0)).replace('$','').replace(',','').replace('%',''))
-        except: return 0.0
-
-    pp       = _n('Purchase_Price')
-    pa       = _n('Purchased_Amount')
-    orig_pct = _n('Origination_Fee_Percentage')
+    pp       = _n(data, 'Purchase_Price')
+    pa       = _n(data, 'Purchased_Amount')
+    orig_pct = _n(data, 'Origination_Fee_Percentage')
     orig_amt = round(pp * orig_pct / 100, 2)
     disbursed= round(pp - orig_amt, 2)
     cost     = round(pa - pp, 2)
@@ -213,224 +158,199 @@ def build_disclosure_bytes(data):
     cost_fmt = _fmt_currency(cost)
 
     spec_pct   = data.get('Specified_Percentage', '')
-    weekly_amt = _fmt_currency(_n('Specific_Weekly_Amount'))
-    ach_freq   = data.get('ACH_Frequency', 'weekly')
+    weekly_amt = _fmt_currency(_n(data, 'Specific_Weekly_Amount'))
+    ach_freq   = (data.get('ACH_Frequency', 'weekly') or 'weekly').lower()
 
     signer1_name  = (data.get('Owner_Guarantor_1', '') or '').title()
     signer1_title = (data.get('Title', '') or '').title()
     signer2_name  = (data.get('Owner_Guarantor_2', '') or '').title() if two_signers else ''
     signer2_title = (data.get('Title_2', '') or '').title() if two_signers else ''
 
-    kansas = cfg['kansas_labels']
+    kansas = cfg.get('kansas_labels', False)
+    freq_word = 'Business Week' if 'week' in ach_freq else 'Business Day'
+    freq_checkbox = (
+        '\u2612Every Business Week  (i.e., one debit per week on a designated business day, '
+        'excluding bank holidays. Payments scheduled for a bank holiday will be debited the next '
+        'business day with the regular payment)'
+        if 'week' in ach_freq else
+        '\u2612Every Business Day (i.e., Monday through Friday, excluding bank holidays. Payments '
+        'scheduled for a bank holiday will be debited the next business day with the regular payment)'
+    )
 
-    doc = Document()
-    for p in doc.paragraphs:
-        p._element.getparent().remove(p._element)
+    initial_payment = _fmt_currency(_n(data, 'Specific_Weekly_Amount') if 'week' in ach_freq
+                                    else _n(data, 'Specific_Daily_Amount'))
 
-    section = doc.sections[0]
-    section.page_width    = Twips(12240)
-    section.page_height   = Twips(15840)
-    section.top_margin    = Twips(720)
-    section.bottom_margin = Twips(720)
-    section.left_margin   = Twips(900)
-    section.right_margin  = Twips(900)
+    # ── Build XML body ─────────────────────────────────────────────────────────
 
-    # ── Title ──────────────────────────────────────────────────────────────────
-    tp = doc.add_paragraph()
-    tp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _spacing(tp, before=0, after=80)
-    r = _run(tp, f"{cfg['name'].upper()} COMMERCIAL FINANCING DISCLOSURE", bold=True, size=20)
-    r.font.underline = True
+    # Title
+    title_xml = _para([_run(f"{cfg['name'].upper()} COMMERCIAL FINANCING DISCLOSURE",
+                            bold=True, sz=20)],
+                      before=0, after=100, jc='center')
 
-    # ── Date ───────────────────────────────────────────────────────────────────
-    dp = doc.add_paragraph()
-    _spacing(dp, before=0, after=80)
-    _run(dp, 'Disclosure Date: ')
-    _run(dp, date_display, bold=True)
+    # Date
+    date_xml = _para([_run('Disclosure Date: ', sz=18),
+                      _run(date_display, bold=True, sz=18)],
+                     before=0, after=80, jc='right')
 
-    # ── Header table ───────────────────────────────────────────────────────────
-    ht = doc.add_table(rows=2, cols=2)
-    _tbl_width(ht, W)
-    _set_tbl_grid(ht, [W//2, W//2])
-    for row in ht.rows:
-        for cell in row.cells:
-            _col_width(cell, W//2); _add_border(cell)
-            _cell_margins(cell, top=100, bottom=100, left=120, right=120)
+    # ── Table 0: Header ─────────────────────────────────────────────────────
+    left_cell_paras = [
+        _para([_run(f'Recipient: {merchant_name}', bold=True)], after=40),
+        _para([_run(f'DBA: {merchant_dba}', bold=True)], after=40),
+        _para([_run(f'Address: {address}', bold=True)], after=20),
+    ]
+    right_cell_paras = [
+        _para([_run('Provider', bold=True)], after=40),
+        _para([_run('Name: FundGate LLC', bold=True)], after=40),
+        _para([_run('Address: 1202 Avenue U, Suite 1175, Brooklyn NY 11229', bold=True)], after=40),
+        _para([_run('Phone Number: 929-355-8918', bold=True)], after=40),
+        _para([_run('E-mail Address: admin@fundgatellc.com', bold=True)], after=40),
+    ]
+    desc_para = _para(
+        [_run(f'This Commercial Financing Disclosure is being provided to the Recipient ("you") by the '
+              f'Provider ("we"or"us") as required by law and is dated as of the Disclosure Date.',
+              italic=True)],
+        before=0, after=0
+    )
 
-    lc = ht.cell(0,0); lc.paragraphs[0].clear()
-    _run(lc.paragraphs[0], 'Recipient: ', bold=True); _run(lc.paragraphs[0], merchant_name, bold=True)
-    _spacing(lc.paragraphs[0], after=40)
-    p2 = lc.add_paragraph(); _run(p2,'DBA: ',bold=True); _run(p2,merchant_dba,bold=True); _spacing(p2,after=40)
-    p3 = lc.add_paragraph(); _run(p3,'Address: ',bold=True); _run(p3,address,bold=True); _spacing(p3,after=0)
+    tbl0 = _tbl([5220, 5220], [
+        _tr(_tc(5220, left_cell_paras), _tc(5220, right_cell_paras)),
+        _tr(_tc(10440, [desc_para], span=2)),
+    ])
 
-    rc = ht.cell(0,1); rc.paragraphs[0].clear()
-    _run(rc.paragraphs[0], 'Provider', bold=True); _spacing(rc.paragraphs[0], after=40)
-    for label, val in [('Name: ','FundGate LLC'),('Address: ','1202 Avenue U, Suite 1175, Brooklyn NY 11229'),
-                       ('Phone: ','929-355-8918'),('Email: ','admin@fundgatellc.com')]:
-        px = rc.add_paragraph()
-        _run(px, label, bold=True); _run(px, val, bold=True)
-        _spacing(px, after=0 if label=='Email: ' else 40)
-
-    merged = ht.cell(1,0).merge(ht.cell(1,1))
-    _add_border(merged); _cell_margins(merged,top=80,bottom=80,left=120,right=120)
-    merged.paragraphs[0].clear()
-    _run(merged.paragraphs[0],
-         f'This Commercial Financing Disclosure is being provided to the Recipient ("you") by the '
-         f'Provider ("we" or "us") as required by {cfg["statute"]} and is dated as of the Disclosure Date.',
-         italic=True)
-    _spacing(merged.paragraphs[0], after=0)
-
-    # ── Amounts table ──────────────────────────────────────────────────────────
+    # ── Table 1: Amounts ────────────────────────────────────────────────────
     if kansas:
-        rows_spec = [
-            ('1.  Total Amount of Funds Provided', pp_fmt),
-            None,
-            ('3.  Total of Payments', pa_fmt),
-            ('4.  Total Dollar Cost of Financing', cost_fmt),
+        amounts_rows = [
+            _tr(_tc(8200, [_para([_run('1.  Total Amount of Funds Provided', bold=True)], after=20)]),
+                _tc(2240, [_para([_run(pp_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(8200, [
+                _para([_run('2.  Total Amount of Funds Disbursed', bold=True)], after=20),
+                _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=17)], after=10),
+                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=17)], after=10),
+                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=17)], after=10),
+            ]),
+                _tc(2240, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(8200, [_para([_run('3.  Total of Payments', bold=True)], after=20)]),
+                _tc(2240, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(8200, [_para([_run('4.  Total Dollar Cost of Financing', bold=True)], after=20)]),
+                _tc(2240, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
         ]
-        r2_label = '2.  Total Amount of Funds Disbursed'
-        r2_right = dis_fmt
     else:
-        rows_spec = [
-            ('1.  Total Amount of Funding Provided', pp_fmt),
-            None,
-            ('3.  Total Amount of Funds Disbursed (1 minus 2)', dis_fmt),
-            ('4.  Total Amount to be Paid to Us', pa_fmt),
-            ('5.  Total Dollar Cost (4 minus 1)', cost_fmt),
+        amounts_rows = [
+            _tr(_tc(8200, [_para([_run('1.  Total Amount of Funding Provided', bold=True)], after=20)]),
+                _tc(2240, [_para([_run(pp_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(8200, [
+                _para([_run('2.  Amounts Deducted from Funding Provided', bold=True)], after=20),
+                _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=17)], after=10),
+                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=17)], after=10),
+                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=17)], after=10),
+            ]),
+                _tc(2240, [_para([_run(orig_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(8200, [_para([_run('3.  Total Amount of Funds Disbursed (1 minus 2)', bold=True)], after=20)]),
+                _tc(2240, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(8200, [_para([_run('4.  Total Amount to be Paid to Us', bold=True)], after=20)]),
+                _tc(2240, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(8200, [_para([_run('5.  Total Dollar Cost (4 minus 1)', bold=True)], after=20)]),
+                _tc(2240, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
         ]
-        r2_label = '2.  Amounts Deducted from Funding Provided'
-        r2_right = orig_fmt
 
-    tt = doc.add_table(rows=0, cols=2)
-    _tbl_width(tt, W)
-    _set_tbl_grid(tt, [8200, 2240])
+    tbl1 = _tbl([8200, 2240], amounts_rows)
 
-    def bold_row(label, amount):
-        row = tt.add_row(); lc2, rc2 = row.cells
-        _col_width(lc2, 8200); _col_width(rc2, 2240)
-        _add_border(lc2); _add_border(rc2)
-        _cell_margins(lc2,top=60,bottom=60,left=120,right=80)
-        _cell_margins(rc2,top=60,bottom=60,left=80,right=120)
-        lc2.paragraphs[0].clear(); _run(lc2.paragraphs[0], label, bold=True); _spacing(lc2.paragraphs[0],after=0)
-        rc2.paragraphs[0].clear(); rc2.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        _run(rc2.paragraphs[0], amount, bold=True); _spacing(rc2.paragraphs[0],after=0)
-        _vcenter(rc2)
+    # ── Table 2: Payment / prepayment ───────────────────────────────────────
+    payment_paras = [
+        _para([_run('We will collect the Total Amount to be Paid to Us by debiting your business bank '
+                    'account in periodic installments or "payments" that will occur with the following frequency:')],
+              after=40),
+        _para([_run(freq_checkbox)], after=40),
+        _para([_run(f'The initial payment will be '),
+               _run(f'{initial_payment}.', bold=True),
+               _run(f' We based your initial payment on '),
+               _run(f'{spec_pct}%', bold=True),
+               _run(f' of your estimated sales revenue. For details on your right to adjust any payment amount, '
+                    f'see Section 3 of your Purchase Agreement.')],
+              after=0),
+    ]
 
-    for r in rows_spec:
-        if r is None:
-            row2 = tt.add_row(); lc2, rc2 = row2.cells
-            _col_width(lc2, 8200); _col_width(rc2, 2240)
-            _add_border(lc2); _add_border(rc2)
-            _cell_margins(lc2,top=60,bottom=60,left=120,right=80)
-            _cell_margins(rc2,top=60,bottom=60,left=80,right=120)
-            lc2.paragraphs[0].clear()
-            _run(lc2.paragraphs[0], r2_label, bold=True); _spacing(lc2.paragraphs[0],after=40)
-            for line in [
-                f'   Fees deducted or withheld at disbursement .......................................  {orig_fmt}',
-                '   Amount deducted for prior balance paid to us ...................................  $0.00',
-                '   Amount deducted and paid to third parties on your behalf .......................  $0.00',
-            ]:
-                px2 = lc2.add_paragraph(); _run(px2, line); _spacing(px2,after=0)
-            rc2.paragraphs[0].clear(); rc2.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            _run(rc2.paragraphs[0], r2_right, bold=True); _spacing(rc2.paragraphs[0],after=0)
-            _vcenter(rc2)
-        else:
-            bold_row(r[0], r[1])
+    prepay_text = (f'If you pay off the financing faster than required, you may pay a reduced amount per the '
+                   f'Addendum to Merchant Cash Advance Agreement dated {date_display}, which sets forth the '
+                   f'contractual rights of the parties related to prepayment. No additional fees will be charged for prepayment.')
 
-    # ── Payment / prepayment table ─────────────────────────────────────────────
-    freq_word = 'Business Week' if 'week' in ach_freq.lower() else 'Business Day'
-    bt = doc.add_table(rows=0, cols=2)
-    _tbl_width(bt, W)
-    _set_tbl_grid(bt, [2600, 7840])
+    tbl2 = _tbl([2600, 7840], [
+        _tr(_tc(2600, [_para([_run('Manner, frequency, and amount of each payment', bold=True)], after=0)]),
+            _tc(7840, payment_paras)),
+        _tr(_tc(2600, [_para([_run('Description of Prepayment Policies', bold=True)], after=0)]),
+            _tc(7840, [_para([_run(prepay_text)], after=0)])),
+    ])
 
-    def wide_row(label, build_fn):
-        row = bt.add_row(); lc3, rc3 = row.cells
-        _col_width(lc3, 2600); _col_width(rc3, 7840)
-        _add_border(lc3); _add_border(rc3)
-        _cell_margins(lc3,top=80,bottom=80,left=120,right=80)
-        _cell_margins(rc3,top=80,bottom=80,left=80,right=120)
-        _vcenter(lc3)
-        lc3.paragraphs[0].clear(); _run(lc3.paragraphs[0], label, bold=True); _spacing(lc3.paragraphs[0],after=0)
-        rc3.paragraphs[0].clear(); _spacing(rc3.paragraphs[0],after=0)
-        build_fn(rc3)
+    # ── Acknowledgment ──────────────────────────────────────────────────────
+    ack_xml = _para([_run('By signing below, you acknowledge that you have received a copy of this disclosure form.')],
+                    before=80, after=80)
 
-    def build_payment(cell):
-        p0 = cell.paragraphs[0]
-        _run(p0, 'We will collect the Total Amount to be Paid to Us by debiting your business bank '
-             'account in periodic installments or "payments" that will occur with the following frequency:')
-        _spacing(p0,after=40)
-        p1 = cell.add_paragraph()
-        _run(p1, f'☒ Every {freq_word}', bold=True)
-        _run(p1, '  (i.e., one debit per week on a designated business day, excluding bank holidays. '
-             'Payments scheduled for a bank holiday will be debited the next business day with the regular payment)')
-        _spacing(p1,after=40)
-        p2 = cell.add_paragraph()
-        _run(p2, 'The initial payment will be ')
-        _run(p2, weekly_amt, bold=True)
-        _run(p2, '. We based your initial payment on ')
-        _run(p2, str(spec_pct), bold=True)
-        _run(p2, ' of your estimated sales revenue. For details on your right to adjust any payment amount, '
-             'see Section 3 of your Purchase Agreement.')
-        _spacing(p2,after=0)
+    # ── Signature table ─────────────────────────────────────────────────────
+    def _sig_row(name, title):
+        sig_label = f'Recipient Signature \u2014 {name}, {title}' if title else f'Recipient Signature \u2014 {name}'
+        sig_col = [_sig_line_para(), _para([_run(sig_label)], before=0, after=60)]
+        date_col = [_sig_line_para(), _para([_run('Date')], before=0, after=60)]
+        spacer_col = [_para([_run('')], after=0)]
+        return _tr(_tc(5100, sig_col), _tc(600, spacer_col), _tc(4740, date_col))
 
-    def build_prepay(cell):
-        p0 = cell.paragraphs[0]
-        _run(p0, 'If you pay off the financing faster than required, you may pay a reduced amount per '
-             'the Addendum to Merchant Cash Advance Agreement dated ')
-        _run(p0, date_display)
-        _run(p0, ', which sets forth the contractual rights of the parties related to prepayment. '
-             'No additional fees will be charged for prepayment.')
-        _spacing(p0,after=0)
-
-    pay_label    = 'Estimated Payments' if kansas else 'Manner, frequency, and amount of each payment'
-    wide_row(pay_label, build_payment)
-    wide_row('Description of Prepayment Policies', build_prepay)
-
-    # ── Acknowledgment ─────────────────────────────────────────────────────────
-    ack = doc.add_paragraph()
-    _run(ack, 'By signing below, you acknowledge that you have received a copy of this disclosure form.')
-    _spacing(ack, before=80, after=80)
-
-    # ── Signature table: one row per signer ─────────────────────────────────
-    # Each signer gets its OWN ROW — LibreOffice can never collapse row 2
-    num_rows = 2 if (two_signers and signer2_name) else 1
-    st = doc.add_table(rows=num_rows, cols=3)
-    _tbl_width(st, W)
-    _set_tbl_grid(st, [5100, 600, 4740])
-
-    def _setup_sig_row(row):
-        lsig, sp, rsig = row.cells
-        _col_width(lsig, 5100); _col_width(sp, 600); _col_width(rsig, 4740)
-        for c in [lsig, sp, rsig]:
-            _no_border(c); _cell_margins(c)
-            for p in list(c.paragraphs):
-                p._element.getparent().remove(p._element)
-        return lsig, sp, rsig
-
-    def _fill_signer_row(row, name, title, top_space=False):
-        lsig, sp, rsig = _setup_sig_row(row)
-        if top_space:
-            tp = lsig.add_paragraph(); _run(tp, ' '); _spacing(tp, before=0, after=80)
-            dp0 = rsig.add_paragraph(); _run(dp0, ' '); _spacing(dp0, before=0, after=80)
-        _sig_line_para(lsig, after=40)
-        lp = lsig.add_paragraph()
-        label = f'Recipient Signature — {name}, {title}' if title else f'Recipient Signature — {name}'
-        lp.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        _run(lp, label); _spacing(lp, before=0, after=60)
-        _sig_line_para(rsig, after=40)
-        dp = rsig.add_paragraph(); _run(dp, 'Date'); _spacing(dp, before=0, after=60)
-        sp.add_paragraph()
-
-    _fill_signer_row(st.rows[0], signer1_name, signer1_title)
+    sig_rows = [_sig_row(signer1_name, signer1_title)]
     if two_signers and signer2_name:
-        _fill_signer_row(st.rows[1], signer2_name, signer2_title, top_space=True)
+        sig_rows.append(_sig_row(signer2_name, signer2_title))
 
-    # ── Statute footer ─────────────────────────────────────────────────────────
-    fp = doc.add_paragraph()
-    fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _run(fp, f"Pursuant to {cfg['statute']}. {cfg['not_loan']}", italic=True, size=16)
-    _spacing(fp, before=80, after=0)
+    tbl3 = _tbl([5100, 600, 4740], sig_rows)
 
+    # ── Footer ──────────────────────────────────────────────────────────────
+    footer_xml = _para(
+        [_run(f"Pursuant to {cfg['statute']}. {cfg['not_loan']}", italic=True, sz=16)],
+        before=80, after=0, jc='center'
+    )
+
+    # ── Assemble document XML ───────────────────────────────────────────────
+    body_content = (title_xml + date_xml + tbl0 + tbl1 + tbl2 +
+                    ack_xml + tbl3 + footer_xml)
+
+    doc_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<w:document {NS}>'
+        '<w:body>'
+        + body_content +
+        '<w:sectPr>'
+        '<w:pgSz w:w="12240" w:h="15840" w:orient="portrait"/>'
+        '<w:pgMar w:top="720" w:right="900" w:bottom="720" w:left="900" '
+        'w:header="708" w:footer="708" w:gutter="0"/>'
+        '</w:sectPr>'
+        '</w:body></w:document>'
+    )
+
+    # ── Package as DOCX ─────────────────────────────────────────────────────
+    # Use the GA sample as the base DOCX (for styles, fonts, etc)
+    import os
+    sample_path = os.path.join(os.path.dirname(__file__), 'disclosure_sample.docx')
+    if not os.path.exists(sample_path):
+        # Fall back to creating from scratch
+        base_path = None
+    else:
+        base_path = sample_path
+
+    # Create minimal DOCX from scratch
     buf = io.BytesIO()
-    doc.save(buf)
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zout:
+        # Minimal required DOCX files
+        zout.writestr('word/document.xml', doc_xml.encode('utf-8'))
+        zout.writestr('[Content_Types].xml',
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            '<Default Extension="xml" ContentType="application/xml"/>'
+            '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+            '</Types>')
+        zout.writestr('_rels/.rels',
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+            '</Relationships>')
+        zout.writestr('word/_rels/document.xml.rels',
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '</Relationships>')
     return buf.getvalue()
