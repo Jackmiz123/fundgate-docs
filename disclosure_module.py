@@ -379,45 +379,39 @@ def build_disclosure_bytes(data):
     _run(ack, 'By signing below, you acknowledge that you have received a copy of this disclosure form.')
     _spacing(ack, before=80, after=80)
 
-    # ── Signature table — matches sample exactly ───────────────────────────────
-    # Cols: sig(5100) | spacer(600) | date(4740) — from sample
-    st = doc.add_table(rows=1, cols=3)
+    # ── Signature table: one row per signer ─────────────────────────────────
+    # Each signer gets its OWN ROW — LibreOffice can never collapse row 2
+    num_rows = 2 if (two_signers and signer2_name) else 1
+    st = doc.add_table(rows=num_rows, cols=3)
     _tbl_width(st, W)
     _set_tbl_grid(st, [5100, 600, 4740])
-    lsig, sp, rsig = st.rows[0].cells
-    _col_width(lsig, 5100); _col_width(sp, 600); _col_width(rsig, 4740)
-    for c in [lsig, sp, rsig]:
-        _no_border(c); _cell_margins(c)
-        # clear default paragraphs
-        for p in list(c.paragraphs):
-            p._element.getparent().remove(p._element)
 
-    def _add_signer(sig_cell, date_cell, name, title, spacer=False):
-        if spacer:
-            # Non-breaking space prevents LibreOffice from collapsing the spacer
-            sp2 = sig_cell.add_paragraph()
-            _run(sp2, u' ')  # non-breaking space
-            _spacing(sp2, before=80, after=80)
-            sp3 = date_cell.add_paragraph()
-            _run(sp3, u' ')
-            _spacing(sp3, before=80, after=80)
-        # Sig line (bottom border paragraph)
-        _sig_line_para(sig_cell, after=40)
-        lp = sig_cell.add_paragraph()
-        label = f'Recipient Signature \u2014 {name}, {title}' if title else f'Recipient Signature \u2014 {name}'
-        lp.alignment = WD_ALIGN_PARAGRAPH.LEFT; _run(lp, label); _spacing(lp, before=0, after=60)
-        # Date line
-        _sig_line_para(date_cell, after=40)
-        dp2 = date_cell.add_paragraph(); _run(dp2, 'Date'); _spacing(dp2, before=0, after=60)
+    def _setup_sig_row(row):
+        lsig, sp, rsig = row.cells
+        _col_width(lsig, 5100); _col_width(sp, 600); _col_width(rsig, 4740)
+        for c in [lsig, sp, rsig]:
+            _no_border(c); _cell_margins(c)
+            for p in list(c.paragraphs):
+                p._element.getparent().remove(p._element)
+        return lsig, sp, rsig
 
-    # Add signer 1
-    _add_signer(lsig, rsig, signer1_name, signer1_title)
-    # Add signer 2 if applicable
+    def _fill_signer_row(row, name, title, top_space=False):
+        lsig, sp, rsig = _setup_sig_row(row)
+        if top_space:
+            tp = lsig.add_paragraph(); _run(tp, ' '); _spacing(tp, before=0, after=80)
+            dp0 = rsig.add_paragraph(); _run(dp0, ' '); _spacing(dp0, before=0, after=80)
+        _sig_line_para(lsig, after=40)
+        lp = lsig.add_paragraph()
+        label = f'Recipient Signature — {name}, {title}' if title else f'Recipient Signature — {name}'
+        lp.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        _run(lp, label); _spacing(lp, before=0, after=60)
+        _sig_line_para(rsig, after=40)
+        dp = rsig.add_paragraph(); _run(dp, 'Date'); _spacing(dp, before=0, after=60)
+        sp.add_paragraph()
+
+    _fill_signer_row(st.rows[0], signer1_name, signer1_title)
     if two_signers and signer2_name:
-        _add_signer(lsig, rsig, signer2_name, signer2_title, spacer=True)
-    # Ensure spacer col has at least one paragraph
-    if not sp.paragraphs:
-        p = sp.add_paragraph(); _spacing(p, before=0, after=0)
+        _fill_signer_row(st.rows[1], signer2_name, signer2_title, top_space=True)
 
     # ── Statute footer ─────────────────────────────────────────────────────────
     fp = doc.add_paragraph()
