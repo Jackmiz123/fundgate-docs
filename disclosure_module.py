@@ -85,10 +85,12 @@ def _tbl_width(table, w):
     tbl = table._tbl
     tblPr = tbl.find(qn('w:tblPr'))
     if tblPr is None: tblPr = OxmlElement('w:tblPr'); tbl.insert(0,tblPr)
-    for existing in tblPr.findall(qn('w:tblW')): tblPr.remove(existing)
-    for existing in tblPr.findall(qn('w:tblLayout')): tblPr.remove(existing)
+    # Remove elements that could interfere with width
+    for tag in ('w:tblW','w:tblLayout','w:tblLook','w:tblStyle','w:tblInd'):
+        for el in tblPr.findall(qn(tag)): tblPr.remove(el)
+    # Set width as absolute fixed
     tblW = OxmlElement('w:tblW'); tblW.set(qn('w:w'),str(w)); tblW.set(qn('w:type'),'dxa')
-    tblPr.append(tblW)
+    tblPr.insert(0, tblW)
     tblLayout = OxmlElement('w:tblLayout'); tblLayout.set(qn('w:type'),'fixed')
     tblPr.append(tblLayout)
 
