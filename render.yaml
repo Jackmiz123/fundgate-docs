@@ -1,9 +1,7 @@
 services:
   - type: web
     name: fundgate-weekly
-    runtime: python
-    buildCommand: apt-get install -y libreoffice
-    startCommand: python server.py
+    runtime: docker
     envVars:
       - key: PORT
         value: 8080
