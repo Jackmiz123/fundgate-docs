@@ -67,7 +67,7 @@ def _n(data, key):
 FONT = 'Arial'
 NS = 'xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:cx="http://schemas.microsoft.com/office/drawing/2014/chartex" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:aink="http://schemas.microsoft.com/office/drawing/2016/ink" xmlns:am3d="http://schemas.microsoft.com/office/drawing/2017/model3d" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:w16cid="http://schemas.microsoft.com/office/word/2016/wordml/cid" xmlns:w16se="http://schemas.microsoft.com/office/word/2015/wordml/symex" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"'
 
-def _rpr(bold=False, italic=False, sz=18):
+def _rpr(bold=False, italic=False, sz=20):
     b = '<w:b/><w:bCs/>' if bold else '<w:b w:val="false"/><w:bCs w:val="false"/>'
     i = '<w:i/><w:iCs/>' if italic else '<w:i w:val="false"/><w:iCs w:val="false"/>'
     return (f'<w:rPr><w:rFonts w:ascii="{FONT}" w:cs="{FONT}" w:eastAsia="{FONT}" w:hAnsi="{FONT}"/>'
@@ -77,7 +77,7 @@ def _ppr(before=0, after=40, jc='left', indent=None):
     ind = f'<w:ind w:left="{indent}"/>' if indent else ''
     return f'<w:pPr><w:spacing w:before="{before}" w:after="{after}"/><w:jc w:val="{jc}"/>{ind}</w:pPr>'
 
-def _run(text, bold=False, italic=False, sz=18):
+def _run(text, bold=False, italic=False, sz=20):
     # Escape XML special chars
     text = text.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;')
     return f'<w:r>{_rpr(bold,italic,sz)}<w:t xml:space="preserve">{text}</w:t></w:r>'
@@ -96,8 +96,8 @@ def _tcpr(w, span=1):
     return (f'<w:tcPr><w:tcW w:type="dxa" w:w="{w}"/><w:gridSpan w:val="{span}"/>'
             f'{TC_BORDERS}'
             f'<w:shd w:fill="FFFFFF" w:val="clear"/>'
-            f'<w:tcMar><w:top w:type="dxa" w:w="60"/><w:left w:type="dxa" w:w="100"/>'
-            f'<w:bottom w:type="dxa" w:w="60"/><w:right w:type="dxa" w:w="100"/></w:tcMar>'
+            f'<w:tcMar><w:top w:type="dxa" w:w="120"/><w:left w:type="dxa" w:w="100"/>'
+            f'<w:bottom w:type="dxa" w:w="120"/><w:right w:type="dxa" w:w="100"/></w:tcMar>'
             f'<w:vAlign w:val="top"/></w:tcPr>')
 
 TBL_BORDERS = ('<w:tblBorders>'
@@ -184,19 +184,19 @@ def build_disclosure_bytes(data):
 
     # Title
     title_xml = _para([_run(f"{cfg['name'].upper()} COMMERCIAL FINANCING DISCLOSURE",
-                            bold=True, sz=20)],
+                            bold=True, sz=22)],
                       before=0, after=100, jc='center')
 
     # Date
-    date_xml = _para([_run('Disclosure Date: ', sz=18),
-                      _run(date_display, bold=True, sz=18)],
+    date_xml = _para([_run('Disclosure Date: ', sz=20),
+                      _run(date_display, bold=True, sz=20)],
                      before=0, after=80, jc='right')
 
     # ── Table 0: Header ─────────────────────────────────────────────────────
     left_cell_paras = [
         _para([_run(f'Recipient: {merchant_name}', bold=True)], after=40),
         _para([_run(f'DBA: {merchant_dba}', bold=True)], after=40),
-        _para([_run(f'Address: {address}', bold=True)], after=20),
+        _para([_run(f'Address: {address}', bold=True)], after=40),
     ]
     right_cell_paras = [
         _para([_run('Provider', bold=True)], after=40),
@@ -220,36 +220,36 @@ def build_disclosure_bytes(data):
     # ── Table 1: Amounts ────────────────────────────────────────────────────
     if kansas:
         amounts_rows = [
-            _tr(_tc(8200, [_para([_run('1.  Total Amount of Funds Provided', bold=True)], after=20)]),
+            _tr(_tc(8200, [_para([_run('1.  Total Amount of Funds Provided', bold=True)], after=40)]),
                 _tc(2240, [_para([_run(pp_fmt, bold=True)], after=20, jc='right')])),
             _tr(_tc(8200, [
-                _para([_run('2.  Total Amount of Funds Disbursed', bold=True)], after=20),
-                _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=17)], after=10),
-                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=17)], after=10),
-                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=17)], after=10),
+                _para([_run('2.  Total Amount of Funds Disbursed', bold=True)], after=40),
+                _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=20)], after=40),
+                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=20)], after=40),
+                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=20)], after=40),
             ]),
                 _tc(2240, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('3.  Total of Payments', bold=True)], after=20)]),
+            _tr(_tc(8200, [_para([_run('3.  Total of Payments', bold=True)], after=40)]),
                 _tc(2240, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('4.  Total Dollar Cost of Financing', bold=True)], after=20)]),
+            _tr(_tc(8200, [_para([_run('4.  Total Dollar Cost of Financing', bold=True)], after=40)]),
                 _tc(2240, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
         ]
     else:
         amounts_rows = [
-            _tr(_tc(8200, [_para([_run('1.  Total Amount of Funding Provided', bold=True)], after=20)]),
+            _tr(_tc(8200, [_para([_run('1.  Total Amount of Funding Provided', bold=True)], after=40)]),
                 _tc(2240, [_para([_run(pp_fmt, bold=True)], after=20, jc='right')])),
             _tr(_tc(8200, [
-                _para([_run('2.  Amounts Deducted from Funding Provided', bold=True)], after=20),
-                _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=17)], after=10),
-                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=17)], after=10),
-                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=17)], after=10),
+                _para([_run('2.  Amounts Deducted from Funding Provided', bold=True)], after=40),
+                _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=20)], after=40),
+                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=20)], after=40),
+                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=20)], after=40),
             ]),
                 _tc(2240, [_para([_run(orig_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('3.  Total Amount of Funds Disbursed (1 minus 2)', bold=True)], after=20)]),
+            _tr(_tc(8200, [_para([_run('3.  Total Amount of Funds Disbursed (1 minus 2)', bold=True)], after=40)]),
                 _tc(2240, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('4.  Total Amount to be Paid to Us', bold=True)], after=20)]),
+            _tr(_tc(8200, [_para([_run('4.  Total Amount to be Paid to Us', bold=True)], after=40)]),
                 _tc(2240, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('5.  Total Dollar Cost (4 minus 1)', bold=True)], after=20)]),
+            _tr(_tc(8200, [_para([_run('5.  Total Dollar Cost (4 minus 1)', bold=True)], after=40)]),
                 _tc(2240, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
         ]
 
@@ -286,22 +286,71 @@ def build_disclosure_bytes(data):
                     before=80, after=80)
 
     # ── Signature table ─────────────────────────────────────────────────────
-    def _sig_row(name, title):
-        sig_label = f'Recipient Signature \u2014 {name}, {title}' if title else f'Recipient Signature \u2014 {name}'
-        sig_col = [_sig_line_para(), _para([_run(sig_label)], before=0, after=60)]
-        date_col = [_sig_line_para(), _para([_run('Date')], before=0, after=60)]
-        spacer_col = [_para([_run('')], after=0)]
-        return _tr(_tc(5100, sig_col), _tc(600, spacer_col), _tc(4740, date_col))
+    def _sig_line_xml():
+        return ('<w:p><w:pPr>'
+                '<w:pBdr><w:bottom w:val="single" w:sz="6" w:color="000000" w:space="1"/></w:pBdr>'
+                '<w:spacing w:before="200" w:after="40"/></w:pPr>'
+                '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:cs="Arial" w:eastAsia="Arial" w:hAnsi="Arial"/>'
+                '<w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
+                '<w:b w:val="0"/><w:i w:val="0"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>'
+                '<w:t xml:space="preserve"> </w:t></w:r></w:p>')
 
-    sig_rows = [_sig_row(signer1_name, signer1_title)]
+    def _label_xml(text):
+        return ('<w:p><w:pPr><w:jc w:val="left"/><w:spacing w:before="0" w:after="60"/></w:pPr>'
+                '<w:r><w:rPr><w:rFonts w:ascii="Arial" w:cs="Arial" w:eastAsia="Arial" w:hAnsi="Arial"/>'
+                '<w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>'
+                '<w:b w:val="0"/><w:i w:val="0"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>'
+                f'<w:t>{text.replace("&","&amp;").replace("<","&lt;")}</w:t></w:r></w:p>')
+
+    def _spacer_xml():
+        return '<w:p><w:pPr><w:spacing w:before="60" w:after="60"/></w:pPr></w:p>'
+
+    NO_BORDER_TC = ('<w:tcBorders>'
+                    '<w:top w:val="none" w:sz="0" w:color="FFFFFF"/>'
+                    '<w:left w:val="none" w:sz="0" w:color="FFFFFF"/>'
+                    '<w:bottom w:val="none" w:sz="0" w:color="FFFFFF"/>'
+                    '<w:right w:val="none" w:sz="0" w:color="FFFFFF"/>'
+                    '</w:tcBorders>'
+                    '<w:tcMar><w:top w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/>'
+                    '<w:left w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tcMar>')
+
+    # Build sig column content
+    s1_label = f'Recipient Signature — {signer1_name}, {signer1_title}' if signer1_title else f'Recipient Signature — {signer1_name}'
+    sig_col_content = _sig_line_xml() + _label_xml(s1_label)
+
+    date_col_content = _sig_line_xml() + _label_xml('Date')
+
     if two_signers and signer2_name:
-        sig_rows.append(_sig_row(signer2_name, signer2_title))
+        s2_label = f'Recipient Signature — {signer2_name}, {signer2_title}' if signer2_title else f'Recipient Signature — {signer2_name}'
+        sig_col_content += _spacer_xml() + _sig_line_xml() + _label_xml(s2_label)
+        date_col_content += _spacer_xml() + _sig_line_xml() + _label_xml('Date')
 
-    tbl3 = _tbl([5100, 600, 4740], sig_rows)
+    tbl3 = (
+        '<w:tbl>'
+        '<w:tblPr>'
+        '<w:tblW w:w="10440" w:type="dxa"/>'
+        '<w:tblBorders>'
+        '<w:top w:val="none" w:sz="0" w:color="FFFFFF"/>'
+        '<w:left w:val="none" w:sz="0" w:color="FFFFFF"/>'
+        '<w:bottom w:val="none" w:sz="0" w:color="FFFFFF"/>'
+        '<w:right w:val="none" w:sz="0" w:color="FFFFFF"/>'
+        '<w:insideH w:val="none" w:sz="0" w:color="FFFFFF"/>'
+        '<w:insideV w:val="none" w:sz="0" w:color="FFFFFF"/>'
+        '</w:tblBorders>'
+        '</w:tblPr>'
+        '<w:tblGrid><w:gridCol w:w="5100"/><w:gridCol w:w="600"/><w:gridCol w:w="4740"/></w:tblGrid>'
+        '<w:tr>'
+        f'<w:tc><w:tcPr><w:tcW w:w="5100" w:type="dxa"/>{NO_BORDER_TC}</w:tcPr>{sig_col_content}</w:tc>'
+        f'<w:tc><w:tcPr><w:tcW w:w="600" w:type="dxa"/>{NO_BORDER_TC}</w:tcPr>'
+        '<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr></w:p></w:tc>'
+        f'<w:tc><w:tcPr><w:tcW w:w="4740" w:type="dxa"/>{NO_BORDER_TC}</w:tcPr>{date_col_content}</w:tc>'
+        '</w:tr>'
+        '</w:tbl>'
+    )
 
     # ── Footer ──────────────────────────────────────────────────────────────
     footer_xml = _para(
-        [_run(f"Pursuant to {cfg['statute']}. {cfg['not_loan']}", italic=True, sz=16)],
+        [_run(f"Pursuant to {cfg['statute']}. {cfg['not_loan']}", italic=True, sz=18)],
         before=80, after=0, jc='center'
     )
 
