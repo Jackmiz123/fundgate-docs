@@ -1,5 +1,5 @@
 """
-Disclosure module — builds state CFDL disclosures as DOCX bytes.
+Disclosure module - builds state CFDL disclosures as DOCX bytes.
 XML generated directly to match the GA sample disclosure exactly.
 """
 import io, zipfile, re
@@ -315,13 +315,13 @@ def build_disclosure_bytes(data):
                     '<w:left w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tcMar>')
 
     # Build sig column content
-    s1_label = f'Recipient Signature — {signer1_name}, {signer1_title}' if signer1_title else f'Recipient Signature — {signer1_name}'
+    s1_label = f'Recipient Signature - {signer1_name}, {signer1_title}' if signer1_title else f'Recipient Signature - {signer1_name}'
     sig_col_content = _sig_line_xml() + _label_xml(s1_label)
 
     date_col_content = _sig_line_xml() + _label_xml('Date')
 
     if two_signers and signer2_name:
-        s2_label = f'Recipient Signature — {signer2_name}, {signer2_title}' if signer2_title else f'Recipient Signature — {signer2_name}'
+        s2_label = f'Recipient Signature - {signer2_name}, {signer2_title}' if signer2_title else f'Recipient Signature - {signer2_name}'
         sig_col_content += _spacer_xml() + _sig_line_xml() + _label_xml(s2_label)
         date_col_content += _spacer_xml() + _sig_line_xml() + _label_xml('Date')
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>FundGate — Weekly Deal</title>
+<title>FundGate - Weekly Deal</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#0a0e1a;--card:#161d2e;--border:#1e2d45;--accent:#00c2ff;--accent2:#0077ff;--text:#e8edf5;--muted:#6b7a99;--success:#00e5a0;--input-bg:#0d1525;}
@@ -90,7 +90,7 @@ select{text-transform:uppercase;}
     <div class="logo-mark">F</div>
     <div class="header-text">
       <h1>FundGate LLC</h1>
-      <p>Weekly Deal — Contract Generator</p>
+      <p>Weekly Deal - Contract Generator</p>
     </div>
   </div>
 </div>
@@ -116,7 +116,7 @@ select{text-transform:uppercase;}
   <!-- STEP 0 -->
   <div class="section-card visible" id="step0">
     <div class="section-title"><div class="icon">🏢</div> Merchant Information</div>
-    <div class="section-sub">Enter once — flows to all pages automatically</div>
+    <div class="section-sub">Enter once - flows to all pages automatically</div>
     <div class="field-grid">
       <div class="field-wrap full"><label>Agreement Date</label><input type="date" id="Agreement_Date"></div>
       <div class="field-wrap full"><label>Merchant Legal Name</label><input type="text" id="Merchant_Legal_Name" placeholder="Full legal business name"></div>
@@ -147,12 +147,12 @@ select{text-transform:uppercase;}
       <div class="field-wrap"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00" required></div></div>
       <div class="field-wrap"><label>Specific Daily Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
       <hr class="section-divider">
-      <div class="section-label">Appendix A — Fees</div>
+      <div class="section-label">Appendix A - Fees</div>
       <div class="field-wrap"><label>ACH Program Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="ACH_Program_Fee_Percentage" placeholder="2.5"></div></div>
       <div class="field-wrap"><label>Origination Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="Origination_Fee_Percentage" placeholder="3"></div></div>
       <hr class="section-divider">
       <div class="section-label">
-        <span>Addendum — Repurchase Schedule</span>
+        <span>Addendum - Repurchase Schedule</span>
         <label class="toggle"><input type="checkbox" id="includeAddendum" checked><span class="toggle-slider"></span></label>
       </div>
       <div id="addendumFields" style="display:contents">
@@ -331,7 +331,7 @@ function buildReview() {
   let html = '';
   sections.forEach(sec => {
     html += `<div class="review-block"><div class="review-block-title">${sec.title}</div><div class="review-grid">`;
-    sec.items.forEach(([l,v]) => html += `<div class="review-item"><label>${l}</label><div class="val">${v||'<span style="color:#2d3f5a">—</span>'}</div></div>`);
+    sec.items.forEach(([l,v]) => html += `<div class="review-item"><label>${l}</label><div class="val">${v||'<span style="color:#2d3f5a">-</span>'}</div></div>`);
     html += `</div></div>`;
   });
   document.getElementById('reviewContent').innerHTML = html;

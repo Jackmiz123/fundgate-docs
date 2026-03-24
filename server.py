@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FundGate Weekly Contract Generator — Render.com deployment"""
+"""FundGate Weekly Contract Generator - Render.com deployment"""
 import http.server, json, zipfile, re, os, subprocess, tempfile, shutil, io
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from disclosure_module import build_disclosure_bytes
@@ -138,7 +138,7 @@ def fill_docx(data):
     doc = doc.replace('«SIGNER2_BLOCK_ACH»',        block_ach)
     doc = doc.replace('«SIGNER2_BLOCK_BANKLOGIN»',  block_bank)
     doc = doc.replace('«SIGNER2_BLOCK_ADDENDUM»',   block_add)
-    # P15 token is in its own paragraph — replace the whole paragraph to avoid blank page
+    # P15 token is in its own paragraph - replace the whole paragraph to avoid blank page
     P15_PARA = ('<w:p w:rsidR="00D3482D" w:rsidRDefault="00D3482D">'
                 '<w:pPr><w:pStyle w:val="TableParagraph"/></w:pPr>'
                 '<w:r><w:t>«SIGNER2_BLOCK_P15»</w:t></w:r></w:p>')
