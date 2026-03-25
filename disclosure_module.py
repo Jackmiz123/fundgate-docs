@@ -198,7 +198,9 @@ def build_disclosure_bytes(data):
     pp       = _n(data, 'Purchase_Price')
     pa       = _n(data, 'Purchased_Amount')
     orig_pct = _n(data, 'Origination_Fee_Percentage')
-    orig_amt = round(pp * orig_pct / 100, 2)
+    ach_pct  = _n(data, 'ACH_Program_Fee_Percentage')
+    total_fee_pct = orig_pct + ach_pct
+    orig_amt = round(pp * total_fee_pct / 100, 2)
     disbursed= round(pp - orig_amt, 2)
     cost     = round(pa - pp, 2)
 
