@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>FundGate - Weekly Deal</title>
+<title>FundGate — Weekly Deal</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#0a0e1a;--card:#161d2e;--border:#1e2d45;--accent:#00c2ff;--accent2:#0077ff;--text:#e8edf5;--muted:#6b7a99;--success:#00e5a0;--input-bg:#0d1525;}
@@ -90,7 +90,7 @@ select{text-transform:uppercase;}
     <div class="logo-mark">F</div>
     <div class="header-text">
       <h1>FundGate LLC</h1>
-      <p>Weekly Deal - Contract Generator</p>
+      <p>Weekly Deal — Contract Generator</p>
     </div>
   </div>
 </div>
@@ -116,7 +116,7 @@ select{text-transform:uppercase;}
   <!-- STEP 0 -->
   <div class="section-card visible" id="step0">
     <div class="section-title"><div class="icon">🏢</div> Merchant Information</div>
-    <div class="section-sub">Enter once - flows to all pages automatically</div>
+    <div class="section-sub">Enter once — flows to all pages automatically</div>
     <div class="field-grid">
       <div class="field-wrap full"><label>Agreement Date</label><input type="date" id="Agreement_Date"></div>
       <div class="field-wrap full"><label>Merchant Legal Name</label><input type="text" id="Merchant_Legal_Name" placeholder="Full legal business name"></div>
@@ -147,18 +147,30 @@ select{text-transform:uppercase;}
       <div class="field-wrap"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00" required></div></div>
       <div class="field-wrap"><label>Specific Daily Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
       <hr class="section-divider">
-      <div class="section-label">Appendix A - Fees</div>
+      <div class="section-label">Appendix A — Fees</div>
       <div class="field-wrap"><label>ACH Program Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="ACH_Program_Fee_Percentage" placeholder="2.5"></div></div>
       <div class="field-wrap"><label>Origination Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="Origination_Fee_Percentage" placeholder="3"></div></div>
       <hr class="section-divider">
       <div class="section-label">
-        <span>Addendum - Repurchase Schedule</span>
+        <span>Addendum — Repurchase Schedule</span>
         <label class="toggle"><input type="checkbox" id="includeAddendum" checked><span class="toggle-slider"></span></label>
       </div>
       <div id="addendumFields" style="display:contents">
         <div class="field-wrap"><label>Addendum Date</label><input type="date" id="Addendum_Date"></div>
         <div class="field-wrap"><label>Repurchase: 0–30 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_30_Day_Amount" placeholder="65,000.00"></div></div>
-        <div class="field-wrap"><label>Repurchase: 31–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_60_Day_Amount" placeholder="68,000.00"></div></div>
+        <div class="field-wrap" style="margin-bottom:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="use_4tier_repurchase" onchange="toggle4Tier(this.checked)" style="width:18px;height:18px;cursor:pointer">
+            Use 4-tier repurchase schedule (31–45 / 46–60 days)
+          </label>
+        </div>
+        <div id="tier3_block">
+          <div class="field-wrap"><label>Repurchase: 31–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_60_Day_Amount" placeholder="68,000.00"></div></div>
+        </div>
+        <div id="tier4_block" style="display:none">
+          <div class="field-wrap"><label>Repurchase: 31–45 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_45_Day_Amount" placeholder="67,000.00"></div></div>
+          <div class="field-wrap"><label>Repurchase: 46–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_46_60_Day_Amount" placeholder="69,000.00"></div></div>
+        </div>
         <div class="field-wrap"><label>After 60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="After_60_Day_Amount" placeholder="70,000.00"></div></div>
       </div>
     </div>
@@ -242,6 +254,11 @@ let savedData = null;
 document.getElementById('includeAddendum').addEventListener('change', function() {
   document.querySelectorAll('#addendumFields .field-wrap').forEach(f => f.style.opacity = this.checked ? '1' : '0.4');
 });
+
+function toggle4Tier(enabled) {
+    document.getElementById('tier3_block').style.display = enabled ? 'none' : 'block';
+    document.getElementById('tier4_block').style.display = enabled ? 'block' : 'none';
+}
 
 function fv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 function formatDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
@@ -331,7 +348,7 @@ function buildReview() {
   let html = '';
   sections.forEach(sec => {
     html += `<div class="review-block"><div class="review-block-title">${sec.title}</div><div class="review-grid">`;
-    sec.items.forEach(([l,v]) => html += `<div class="review-item"><label>${l}</label><div class="val">${v||'<span style="color:#2d3f5a">-</span>'}</div></div>`);
+    sec.items.forEach(([l,v]) => html += `<div class="review-item"><label>${l}</label><div class="val">${v||'<span style="color:#2d3f5a">—</span>'}</div></div>`);
     html += `</div></div>`;
   });
   document.getElementById('reviewContent').innerHTML = html;
@@ -359,6 +376,9 @@ function getData() {
     Origination_Fee_Percentage: fmtPct(fv('Origination_Fee_Percentage')),
     Repurchase_30_Day_Amount: fmtMoney(fv('Repurchase_30_Day_Amount')),
     Repurchase_31_60_Day_Amount: fmtMoney(fv('Repurchase_31_60_Day_Amount')),
+    use_4tier_repurchase: document.getElementById('use_4tier_repurchase').checked,
+    Repurchase_31_45_Day_Amount: fmtMoney(fv('Repurchase_31_45_Day_Amount')),
+    Repurchase_46_60_Day_Amount: fmtMoney(fv('Repurchase_46_60_Day_Amount')),
     After_60_Day_Amount: fmtMoney(fv('After_60_Day_Amount')),
     Addendum_Date: formatDate(fv('Addendum_Date')),
     Bank_Name: (fv('Bank_Name')||'').toUpperCase(),

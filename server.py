@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FundGate Weekly Contract Generator - Render.com deployment"""
+"""FundGate Weekly Contract Generator — Render.com deployment"""
 import http.server, json, zipfile, re, os, subprocess, tempfile, shutil, io
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from disclosure_module import build_disclosure_bytes
@@ -39,7 +39,7 @@ FIELDS = {
     '«Account_Number»':             'Account_Number',
     '«Authorized_Signer_Name»':     'Authorized_Signer_Name',
     '«Repurchase_30_Day_Amount»':   'Repurchase_30_Day_Amount',
-    '«Repurchase_31_60_Day_Amount»':'Repurchase_31_60_Day_Amount',
+    # Repurchase_31_60_Day_Amount handled dynamically via REPURCHASE_MID_BLOCK
     '«After_60_Day_Amount»':        'After_60_Day_Amount',
     '«Title»':                      'Title',
 }
@@ -138,7 +138,39 @@ def fill_docx(data):
     doc = doc.replace('«SIGNER2_BLOCK_ACH»',        block_ach)
     doc = doc.replace('«SIGNER2_BLOCK_BANKLOGIN»',  block_bank)
     doc = doc.replace('«SIGNER2_BLOCK_ADDENDUM»',   block_add)
-    # P15 token is in its own paragraph - replace the whole paragraph to avoid blank page
+
+    # ── Repurchase mid-block (3-tier vs 4-tier) ────────────────────────────
+    use_4tier = bool(data.get('use_4tier_repurchase'))
+    r31_45 = data.get('Repurchase_31_45_Day_Amount', '')
+    r46_60 = data.get('Repurchase_46_60_Day_Amount', '')
+    if use_4tier and r31_45 and r46_60:
+        mid_block = (
+            'If between thirty-one (31) and forty-five (45) days of the Payment of the '
+            'Purchase price by the Purchaser, the Repurchase Amount shall be ' + r31_45 +
+            ' less any payments made prior to the payment of the Repurchase Amount.\n'
+            'If between forty-six (46) and sixty (60) days of the Payment of the '
+            'Purchase price by the Purchaser, the Repurchase Amount shall be ' + r46_60 +
+            ' less any payments made prior to the payment of the Repurchase Amount.'
+        )
+        # Build two paragraphs matching the template style
+        def _rp(text):
+            return ('<w:p w:rsidR="00D3482D" w:rsidRDefault="00D3482D">'
+                    '<w:pPr><w:spacing w:before="229" w:line="247" w:lineRule="auto"/>'
+                    '<w:ind w:left="120"/></w:pPr>'
+                    '<w:r><w:rPr><w:color w:val="010202"/></w:rPr>'
+                    '<w:t xml:space="preserve">' + text.replace('&','&amp;').replace('<','&lt;') + '</w:t></w:r></w:p>')
+        mid_xml = (_rp('If between thirty-one (31) and forty-five (45) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + r31_45 + ' less any payments made prior to the payment of the Repurchase Amount.') +
+                   _rp('If between forty-six (46) and sixty (60) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + r46_60 + ' less any payments made prior to the payment of the Repurchase Amount.'))
+    else:
+        # 3-tier: use original 31-60 text with Repurchase_31_60_Day_Amount
+        r31_60 = data.get('Repurchase_31_60_Day_Amount', '')
+        mid_xml = ('<w:p w:rsidR="00D3482D" w:rsidRDefault="00D3482D">'
+                   '<w:pPr><w:spacing w:before="229" w:line="247" w:lineRule="auto"/>'
+                   '<w:ind w:left="120"/></w:pPr>'
+                   '<w:r><w:rPr><w:color w:val="010202"/></w:rPr>'
+                   '<w:t xml:space="preserve">If between thirty-one (31) and sixty (60) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + r31_60 + ' less any payments made prior to the payment of the Repurchase Amount.</w:t></w:r></w:p>')
+    doc = doc.replace('«REPURCHASE_MID_BLOCK»', mid_xml)
+    # P15 token is in its own paragraph — replace the whole paragraph to avoid blank page
     P15_PARA = ('<w:p w:rsidR="00D3482D" w:rsidRDefault="00D3482D">'
                 '<w:pPr><w:pStyle w:val="TableParagraph"/></w:pPr>'
                 '<w:r><w:t>«SIGNER2_BLOCK_P15»</w:t></w:r></w:p>')
