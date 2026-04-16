@@ -73,8 +73,12 @@ def _rpr(bold=False, italic=False, sz=20):
     return (f'<w:rPr><w:rFonts w:ascii="{FONT}" w:cs="{FONT}" w:eastAsia="{FONT}" w:hAnsi="{FONT}"/>'
             f'{b}{i}<w:sz w:val="{sz}"/><w:szCs w:val="{sz}"/></w:rPr>')
 
-def _ppr(before=0, after=40, jc='left', indent=None):
-    ind = f'<w:ind w:left="{indent}"/>' if indent else ''
+def _ppr(before=0, after=40, jc='left', indent=None, indent_lr=None):
+    ind = ''
+    if indent_lr:
+        ind = f'<w:ind w:left="{indent_lr}" w:right="{indent_lr}"/>'
+    elif indent:
+        ind = f'<w:ind w:left="{indent}"/>'
     return f'<w:pPr><w:spacing w:before="{before}" w:after="{after}"/><w:jc w:val="{jc}"/>{ind}</w:pPr>'
 
 def _run(text, bold=False, italic=False, sz=20):
@@ -82,8 +86,8 @@ def _run(text, bold=False, italic=False, sz=20):
     text = text.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;')
     return f'<w:r>{_rpr(bold,italic,sz)}<w:t xml:space="preserve">{text}</w:t></w:r>'
 
-def _para(runs, before=0, after=40, jc='left', indent=None):
-    return f'<w:p>{_ppr(before,after,jc,indent)}{"".join(runs)}</w:p>'
+def _para(runs, before=0, after=40, jc='left', indent=None, indent_lr=None):
+    return f'<w:p>{_ppr(before,after,jc,indent,indent_lr)}{"".join(runs)}</w:p>'
 
 TC_BORDERS = ('<w:tcBorders>'
               '<w:top w:val="single" w:color="000000" w:sz="4"/>'
@@ -109,11 +113,12 @@ TBL_BORDERS = ('<w:tblBorders>'
                '<w:insideV w:val="single" w:color="auto" w:sz="4"/>'
                '</w:tblBorders>')
 
-def _tbl(grid_cols, rows_xml, w=10440):
+def _tbl(grid_cols, rows_xml, w=11520):
     grid = ''.join(f'<w:gridCol w:w="{c}"/>' for c in grid_cols)
     rows = ''.join(rows_xml)
     return (f'<w:tbl>'
-            f'<w:tblPr><w:tblW w:type="dxa" w:w="{w}"/>{TBL_BORDERS}</w:tblPr>'
+            f'<w:tblPr><w:tblW w:type="dxa" w:w="{w}"/>'
+            f'{TBL_BORDERS}</w:tblPr>'
             f'<w:tblGrid>{grid}</w:tblGrid>'
             f'{rows}</w:tbl>')
 
@@ -212,48 +217,48 @@ def build_disclosure_bytes(data):
         before=0, after=0
     )
 
-    tbl0 = _tbl([5220, 5220], [
-        _tr(_tc(5220, left_cell_paras), _tc(5220, right_cell_paras)),
-        _tr(_tc(10440, [desc_para], span=2)),
+    tbl0 = _tbl([5760, 5760], [
+        _tr(_tc(5760, left_cell_paras), _tc(5760, right_cell_paras)),
+        _tr(_tc(11520, [desc_para], span=2)),
     ])
 
     # ── Table 1: Amounts ────────────────────────────────────────────────────
     if kansas:
         amounts_rows = [
-            _tr(_tc(8200, [_para([_run('1.  Total Amount of Funds Provided', bold=True)], after=40)]),
-                _tc(2240, [_para([_run(pp_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [
+            _tr(_tc(9048, [_para([_run('1.  Total Amount of Funds Provided', bold=True)], after=40)]),
+                _tc(2472, [_para([_run(pp_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(9048, [
                 _para([_run('2.  Total Amount of Funds Disbursed', bold=True)], after=40),
                 _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=20)], after=40),
                 _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=20)], after=40),
                 _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=20)], after=40),
             ]),
-                _tc(2240, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('3.  Total of Payments', bold=True)], after=40)]),
-                _tc(2240, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('4.  Total Dollar Cost of Financing', bold=True)], after=40)]),
-                _tc(2240, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
+                _tc(2472, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(9048, [_para([_run('3.  Total of Payments', bold=True)], after=40)]),
+                _tc(2472, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(9048, [_para([_run('4.  Total Dollar Cost of Financing', bold=True)], after=40)]),
+                _tc(2472, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
         ]
     else:
         amounts_rows = [
-            _tr(_tc(8200, [_para([_run('1.  Total Amount of Funding Provided', bold=True)], after=40)]),
-                _tc(2240, [_para([_run(pp_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [
+            _tr(_tc(9048, [_para([_run('1.  Total Amount of Funding Provided', bold=True)], after=40)]),
+                _tc(2472, [_para([_run(pp_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(9048, [
                 _para([_run('2.  Amounts Deducted from Funding Provided', bold=True)], after=40),
                 _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=20)], after=40),
                 _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=20)], after=40),
                 _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=20)], after=40),
             ]),
-                _tc(2240, [_para([_run(orig_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('3.  Total Amount of Funds Disbursed (1 minus 2)', bold=True)], after=40)]),
-                _tc(2240, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('4.  Total Amount to be Paid to Us', bold=True)], after=40)]),
-                _tc(2240, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(8200, [_para([_run('5.  Total Dollar Cost (4 minus 1)', bold=True)], after=40)]),
-                _tc(2240, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
+                _tc(2472, [_para([_run(orig_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(9048, [_para([_run('3.  Total Amount of Funds Disbursed (1 minus 2)', bold=True)], after=40)]),
+                _tc(2472, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(9048, [_para([_run('4.  Total Amount to be Paid to Us', bold=True)], after=40)]),
+                _tc(2472, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(9048, [_para([_run('5.  Total Dollar Cost (4 minus 1)', bold=True)], after=40)]),
+                _tc(2472, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
         ]
 
-    tbl1 = _tbl([8200, 2240], amounts_rows)
+    tbl1 = _tbl([9048, 2472], amounts_rows)
 
     # ── Table 2: Payment / prepayment ───────────────────────────────────────
     payment_paras = [
@@ -274,11 +279,11 @@ def build_disclosure_bytes(data):
                    f'Addendum to Merchant Cash Advance Agreement dated {date_display}, which sets forth the '
                    f'contractual rights of the parties related to prepayment. No additional fees will be charged for prepayment.')
 
-    tbl2 = _tbl([2600, 7840], [
-        _tr(_tc(2600, [_para([_run('Manner, frequency, and amount of each payment', bold=True)], after=0)]),
-            _tc(7840, payment_paras)),
-        _tr(_tc(2600, [_para([_run('Description of Prepayment Policies', bold=True)], after=0)]),
-            _tc(7840, [_para([_run(prepay_text)], after=0)])),
+    tbl2 = _tbl([2869, 8651], [
+        _tr(_tc(2869, [_para([_run('Manner, frequency, and amount of each payment', bold=True)], after=0)]),
+            _tc(8651, payment_paras)),
+        _tr(_tc(2869, [_para([_run('Description of Prepayment Policies', bold=True)], after=0)]),
+            _tc(8651, [_para([_run(prepay_text)], after=0)])),
     ])
 
     # ── Acknowledgment ──────────────────────────────────────────────────────
@@ -328,7 +333,7 @@ def build_disclosure_bytes(data):
     tbl3 = (
         '<w:tbl>'
         '<w:tblPr>'
-        '<w:tblW w:w="10440" w:type="dxa"/>'
+        '<w:tblW w:w="11520" w:type="dxa"/>'
         '<w:tblBorders>'
         '<w:top w:val="none" w:sz="0" w:color="FFFFFF"/>'
         '<w:left w:val="none" w:sz="0" w:color="FFFFFF"/>'
@@ -338,12 +343,12 @@ def build_disclosure_bytes(data):
         '<w:insideV w:val="none" w:sz="0" w:color="FFFFFF"/>'
         '</w:tblBorders>'
         '</w:tblPr>'
-        '<w:tblGrid><w:gridCol w:w="5100"/><w:gridCol w:w="600"/><w:gridCol w:w="4740"/></w:tblGrid>'
+        '<w:tblGrid><w:gridCol w:w="5628"/><w:gridCol w:w="662"/><w:gridCol w:w="5230"/></w:tblGrid>'
         '<w:tr>'
-        f'<w:tc><w:tcPr><w:tcW w:w="5100" w:type="dxa"/>{NO_BORDER_TC}</w:tcPr>{sig_col_content}</w:tc>'
-        f'<w:tc><w:tcPr><w:tcW w:w="600" w:type="dxa"/>{NO_BORDER_TC}</w:tcPr>'
+        f'<w:tc><w:tcPr><w:tcW w:w="5628" w:type="dxa"/>{NO_BORDER_TC}</w:tcPr>{sig_col_content}</w:tc>'
+        f'<w:tc><w:tcPr><w:tcW w:w="662" w:type="dxa"/>{NO_BORDER_TC}</w:tcPr>'
         '<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr></w:p></w:tc>'
-        f'<w:tc><w:tcPr><w:tcW w:w="4740" w:type="dxa"/>{NO_BORDER_TC}</w:tcPr>{date_col_content}</w:tc>'
+        f'<w:tc><w:tcPr><w:tcW w:w="5230" w:type="dxa"/>{NO_BORDER_TC}</w:tcPr>{date_col_content}</w:tc>'
         '</w:tr>'
         '</w:tbl>'
     )
@@ -365,7 +370,7 @@ def build_disclosure_bytes(data):
         + body_content +
         '<w:sectPr>'
         '<w:pgSz w:w="12240" w:h="15840" w:orient="portrait"/>'
-        '<w:pgMar w:top="720" w:right="900" w:bottom="720" w:left="900" '
+        '<w:pgMar w:top="720" w:right="360" w:bottom="720" w:left="360" '
         'w:header="708" w:footer="708" w:gutter="0"/>'
         '</w:sectPr>'
         '</w:body></w:document>'
