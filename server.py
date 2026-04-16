@@ -267,6 +267,15 @@ def fill_docx(data):
                                   'w:before="80" w:line="360" w:lineRule="auto"')
             chunk = re.sub(r'(<w:pgMar[^>]*?)w:top="1120"', r'\1w:top="700"', chunk)
 
+            # Adjust the Sign Here arrow vertical offset for the compressed spacing.
+            # In 1-signer mode, offset 175895 aligns the arrow with the signature line.
+            # In 2-signer mode, the reduced before-spacing (228→80) pushes the arrow
+            # below the sig line.  Reduce offset so it stays aligned.
+            chunk = chunk.replace(
+                '<wp:posOffset>175895</wp:posOffset></wp:positionV>',
+                '<wp:posOffset>60000</wp:posOffset></wp:positionV>'
+            )
+
             doc = doc[:s22_end] + chunk + doc[s26_end:]
 
         # ── Addendum signature page spacing fix ─────────────────────────────────
