@@ -40,6 +40,20 @@
   select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a99' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
   .input-prefix{position:relative;}
   .input-prefix span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
+
+  /* Landing page selector */
+  .landing{max-width:680px;margin:40px auto 0;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:30px;}
+  .landing h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);text-align:center;}
+  .landing p{color:var(--muted);font-size:14px;text-align:center;margin-top:-18px;}
+  .landing-buttons{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;margin-top:10px;}
+  .landing-btn{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:32px 20px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;transition:all .25s;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .landing-btn:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(0,194,255,.15);transform:translateY(-2px);}
+  .landing-btn .lb-icon{font-size:42px;}
+  .landing-btn .lb-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);}
+  .landing-btn .lb-sub{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+  @media (max-width:480px){
+    .landing-buttons{grid-template-columns:1fr;}
+  }
   input:not(#Owner_Guarantor_1):not(#Merchant_1):not(#Authorized_Signer_Name):not(#Title){text-transform:uppercase;}
 select{text-transform:uppercase;}
   .input-prefix input{padding-left:24px;}
@@ -90,12 +104,30 @@ select{text-transform:uppercase;}
     <div class="logo-mark">F</div>
     <div class="header-text">
       <h1>FundGate LLC</h1>
-      <p>Weekly Deal — Contract Generator</p>
+      <p id="headerSubtitle">Contract Generator</p>
     </div>
   </div>
 </div>
 
-<div class="progress-wrap" id="progressWrap">
+<!-- LANDING SELECTOR — shown first, lets the user pick Daily vs Weekly -->
+<div class="landing" id="landingScreen">
+  <h2>Choose Contract Type</h2>
+  <p>Pick the schedule that matches this deal.</p>
+  <div class="landing-buttons">
+    <button class="landing-btn" onclick="selectDealType('weekly')">
+      <div class="lb-icon">📅</div>
+      <div class="lb-title">Weekly Contract</div>
+      <div class="lb-sub">Debits once per week</div>
+    </button>
+    <button class="landing-btn" onclick="selectDealType('daily')">
+      <div class="lb-icon">🗓️</div>
+      <div class="lb-title">Daily Contract</div>
+      <div class="lb-sub">Debits every business day</div>
+    </button>
+  </div>
+</div>
+
+<div class="progress-wrap" id="progressWrap" style="display:none;">
   <div class="progress-steps">
     <div class="step-pill active" id="pill0"></div>
     <div class="step-pill" id="pill1"></div>
@@ -112,7 +144,7 @@ select{text-transform:uppercase;}
   </div>
 </div>
 
-<div class="content" id="mainContent">
+<div class="content" id="mainContent" style="display:none;">
   <!-- STEP 0 -->
   <div class="section-card visible" id="step0">
     <div class="section-title"><div class="icon">🏢</div> Merchant Information</div>
@@ -144,8 +176,8 @@ select{text-transform:uppercase;}
       <div class="field-wrap"><label>Purchased Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Purchased_Amount" placeholder="70,000.00"></div></div>
       <div class="field-wrap"><label>Specified Percentage</label><div class="input-prefix"><span>%</span><input type="text" id="Specified_Percentage" placeholder="15"></div></div>
       <div class="field-wrap"><label>ACH Frequency</label><input type="text" id="ACH_Frequency" value="Weekly" readonly style="background:rgba(255,255,255,0.05);color:var(--text-muted);cursor:not-allowed;"></div>
-      <div class="field-wrap"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00" required></div></div>
-      <div class="field-wrap"><label>Specific Daily Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
+      <div class="field-wrap" id="wrap_weekly_amt"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00"></div></div>
+      <div class="field-wrap" id="wrap_daily_amt"><label>Specific Daily Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
       <hr class="section-divider">
       <div class="section-label">Appendix A — Fees</div>
       <div class="field-wrap"><label>ACH Program Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="ACH_Program_Fee_Percentage" placeholder="2.5"></div></div>
@@ -250,6 +282,50 @@ select{text-transform:uppercase;}
 let currentStep = 0;
 const totalSteps = 5;
 let savedData = null;
+let DEAL_TYPE = 'weekly'; // set by selectDealType() from the landing screen
+
+function selectDealType(type) {
+  DEAL_TYPE = type; // 'weekly' or 'daily'
+  const isDaily = type === 'daily';
+  // Hide landing, show form + progress
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('progressWrap').style.display = '';
+  document.getElementById('mainContent').style.display = '';
+  // Header subtitle
+  document.getElementById('headerSubtitle').textContent =
+    (isDaily ? 'Daily Deal' : 'Weekly Deal') + ' — Contract Generator';
+  // Page title
+  document.title = 'FundGate — ' + (isDaily ? 'Daily Deal' : 'Weekly Deal');
+  // ACH Frequency field (drives the template label text on page 1 etc.)
+  const freqEl = document.getElementById('ACH_Frequency');
+  if (freqEl) freqEl.value = isDaily ? 'Daily' : 'Weekly';
+  // Show only the relevant amount field + mark it required
+  const wkly = document.getElementById('wrap_weekly_amt');
+  const daly = document.getElementById('wrap_daily_amt');
+  const wklyInput = document.getElementById('Specific_Weekly_Amount');
+  const dalyInput = document.getElementById('Specific_Daily_Amount');
+  if (isDaily) {
+    if (wkly) wkly.style.display = 'none';
+    if (daly) daly.style.display = '';
+    if (wklyInput) wklyInput.removeAttribute('required');
+    if (dalyInput) dalyInput.setAttribute('required', '');
+  } else {
+    if (wkly) wkly.style.display = '';
+    if (daly) daly.style.display = 'none';
+    if (wklyInput) wklyInput.setAttribute('required', '');
+    if (dalyInput) dalyInput.removeAttribute('required');
+  }
+}
+
+function goBackToLanding() {
+  document.getElementById('landingScreen').style.display = '';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  const succ = document.getElementById('successScreen');
+  if (succ) succ.classList.remove('visible');
+  document.getElementById('headerSubtitle').textContent = 'Contract Generator';
+  document.title = 'FundGate — Contract Generator';
+}
 
 document.getElementById('includeAddendum').addEventListener('change', function() {
   document.querySelectorAll('#addendumFields .field-wrap').forEach(f => f.style.opacity = this.checked ? '1' : '0.4');
@@ -370,6 +446,7 @@ function getData() {
     Purchased_Amount: fmtMoney(fv('Purchased_Amount')),
     Specified_Percentage: fmtPct(fv('Specified_Percentage')),
     ACH_Frequency: fv('ACH_Frequency'),
+    dealType: DEAL_TYPE,
     Specific_Weekly_Amount: fmtMoney(fv('Specific_Weekly_Amount')),
     Specific_Daily_Amount: fmtMoney(fv('Specific_Daily_Amount')),
     ACH_Program_Fee_Percentage: fmtPct(fv('ACH_Program_Fee_Percentage')),
@@ -424,7 +501,8 @@ async function downloadPdf() {
     const resp = await fetch('/generate/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(savedData) });
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
     const blob = await resp.blob();
-    const name = `FundGate_Weekly_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.pdf`;
+    const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
+    const name = `FundGate_${deal}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.pdf`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = name;
     document.body.appendChild(a); a.click();
@@ -450,7 +528,8 @@ async function downloadDocx() {
     });
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
     const blob = await resp.blob();
-    const name = `FundGate_Weekly_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.docx`;
+    const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
+    const name = `FundGate_${deal}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.docx`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = name;
@@ -481,12 +560,14 @@ function editDeal() {
 function resetForm() {
   document.querySelectorAll('input,select').forEach(el => { if(el.type==='checkbox') el.checked=true; else el.value=''; });
   currentStep=0; savedData=null;
-  document.getElementById('successScreen').classList.remove('visible');
-  document.getElementById('mainContent').style.display='block';
-  document.getElementById('navRow').style.display='flex';
-  document.getElementById('progressWrap').style.display='block';
+  // Re-set today's dates since we wiped them
+  const today = new Date().toISOString().split('T')[0];
+  const ad = document.getElementById('Agreement_Date'); if (ad) ad.value = today;
+  const add = document.getElementById('Addendum_Date'); if (add) add.value = today;
   document.querySelectorAll('.section-card').forEach(c=>c.classList.remove('visible'));
   document.getElementById('step0').classList.add('visible');
+  // Send the user back to the landing screen to pick Daily/Weekly again
+  goBackToLanding();
   updateNav(); updateProgress();
   window.scrollTo({top:0});
 }

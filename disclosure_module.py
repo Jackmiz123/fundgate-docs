@@ -264,7 +264,7 @@ def build_disclosure_bytes(data):
         _para([_run(f'The initial payment will be '),
                _run(f'{initial_payment}.', bold=True),
                _run(f' We based your initial payment on '),
-               _run(f'{spec_pct}%', bold=True),
+               _run(spec_pct if '%' in spec_pct else f'{spec_pct}%', bold=True),
                _run(f' of your estimated sales revenue. For details on your right to adjust any payment amount, '
                     f'see Section 3 of your Purchase Agreement.')],
               after=0),

@@ -96,7 +96,8 @@ def merge_disclosure_into_contract(contract_bytes, disclosure_bytes):
 
 
 def fill_docx(data):
-    template = TEMPLATE_DAILY if data.get('dealType') == 'daily' else TEMPLATE_WEEKLY
+    is_daily = data.get('dealType') == 'daily'
+    template = TEMPLATE_DAILY if is_daily else TEMPLATE_WEEKLY
     with zipfile.ZipFile(template, 'r') as z:
         names = z.namelist()
         files = {n: z.read(n) for n in names}
@@ -107,6 +108,16 @@ def fill_docx(data):
     def safe(val):
         return (val or '').replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
+    # Determine the rId that points to the Sign Here arrow image (media/image2.png)
+    # in the current template — s2_block files reference rId10 (weekly's mapping) by
+    # default, so daily needs a rewrite since daily maps image2.png to rId9.
+    rels_xml = files['word/_rels/document.xml.rels'].decode('utf-8')
+    _arrow_rid = None
+    for m in re.finditer(r'<Relationship Id="(rId\d+)"[^>]*Target="([^"]+)"', rels_xml):
+        if m.group(2) == 'media/image2.png':
+            _arrow_rid = m.group(1)
+            break
+
     # ── Handle signer 2 placeholder blocks ──────────────────────────────────────
     if two_signers:
         def fill_s2_block(block_xml):
@@ -115,6 +126,10 @@ def fill_docx(data):
                 if key in ('Owner_Guarantor_2', 'Merchant_Legal_Name', 'Merchant_DBA'):
                     val = val.upper()
                 block_xml = block_xml.replace(placeholder, safe(val))
+            # Patch rId10 references (Sign Here arrow) for templates where
+            # image2.png maps to a different rId (e.g. daily uses rId9).
+            if _arrow_rid and _arrow_rid != 'rId10':
+                block_xml = block_xml.replace('r:embed="rId10"', f'r:embed="{_arrow_rid}"')
             return block_xml
 
         block_p4   = fill_s2_block(load_signer2_block('s2_block_p4.xml'))
@@ -140,36 +155,75 @@ def fill_docx(data):
     doc = doc.replace('«SIGNER2_BLOCK_ADDENDUM»',   block_add)
 
     # ── Repurchase mid-block (3-tier vs 4-tier) ────────────────────────────
+    # Build paragraphs that mirror the template's "If within thirty (30)..." styling:
+    # each word as its own run, bold on the day numbers (thirty-one, (31), and,
+    # forty-five, (45), days), bold + underline on the dollar amount.
     use_4tier = bool(data.get('use_4tier_repurchase'))
-    r31_45 = data.get('Repurchase_31_45_Day_Amount', '')
-    r46_60 = data.get('Repurchase_46_60_Day_Amount', '')
+    r31_45 = data.get('Repurchase_31_45_Day_Amount', '') or ''
+    r46_60 = data.get('Repurchase_46_60_Day_Amount', '') or ''
+    r31_60 = data.get('Repurchase_31_60_Day_Amount', '') or ''
+
+    def _run_plain(text):
+        return ('<w:r><w:rPr><w:color w:val="010202"/></w:rPr>'
+                '<w:t xml:space="preserve">' + safe(text) + '</w:t></w:r>')
+
+    def _run_bold(text):
+        return ('<w:r><w:rPr><w:b/><w:color w:val="010202"/></w:rPr>'
+                '<w:t xml:space="preserve">' + safe(text) + '</w:t></w:r>')
+
+    def _run_bold_underline(text):
+        return ('<w:r><w:rPr><w:b/><w:color w:val="010202"/>'
+                '<w:spacing w:val="-2"/>'
+                '<w:u w:val="single" w:color="010202"/></w:rPr>'
+                '<w:t xml:space="preserve">' + safe(text) + '</w:t></w:r>')
+
+    def _build_mid_para(low_word, low_num, high_word, high_num, amount):
+        """Build a properly styled 'If between X and Y days...' paragraph."""
+        # Paragraph properties match the template's addendum body paragraphs
+        ppr = ('<w:pPr><w:spacing w:before="222"/>'
+               '<w:ind w:left="120"/>'
+               '<w:rPr><w:b/></w:rPr></w:pPr>')
+        runs = []
+        runs.append(_run_plain('If between '))
+        runs.append(_run_bold(low_word))
+        runs.append(_run_bold(' ('))
+        runs.append(_run_bold(low_num))
+        runs.append(_run_bold(') '))
+        runs.append(_run_bold('and'))
+        runs.append(_run_bold(' '))
+        runs.append(_run_bold(high_word))
+        runs.append(_run_bold(' ('))
+        runs.append(_run_bold(high_num))
+        runs.append(_run_bold(') '))
+        runs.append(_run_bold('days'))
+        runs.append(_run_plain(' of the Payment of the Purchase price by the Purchaser, '
+                               'the Repurchase Amount shall be '))
+        runs.append(_run_bold_underline(amount))
+        runs.append(_run_plain(' less any payments made prior to the payment of the '
+                               'Repurchase Amount.'))
+        return ('<w:p w:rsidR="00D3482D" w:rsidRPr="00EC45D9" '
+                'w:rsidRDefault="00D3482D" w:rsidP="00D3482D">' +
+                ppr + ''.join(runs) + '</w:p>')
+
     if use_4tier and r31_45 and r46_60:
-        mid_block = (
-            'If between thirty-one (31) and forty-five (45) days of the Payment of the '
-            'Purchase price by the Purchaser, the Repurchase Amount shall be ' + r31_45 +
-            ' less any payments made prior to the payment of the Repurchase Amount.\n'
-            'If between forty-six (46) and sixty (60) days of the Payment of the '
-            'Purchase price by the Purchaser, the Repurchase Amount shall be ' + r46_60 +
-            ' less any payments made prior to the payment of the Repurchase Amount.'
+        mid_xml = (
+            _build_mid_para('thirty-one', '31', 'forty-five', '45', r31_45) +
+            _build_mid_para('forty-six',  '46', 'sixty',      '60', r46_60)
         )
-        # Build two paragraphs matching the template style
-        def _rp(text):
-            return ('<w:p w:rsidR="00D3482D" w:rsidRDefault="00D3482D">'
-                    '<w:pPr><w:spacing w:before="229" w:line="247" w:lineRule="auto"/>'
-                    '<w:ind w:left="120"/></w:pPr>'
-                    '<w:r><w:rPr><w:color w:val="010202"/></w:rPr>'
-                    '<w:t xml:space="preserve">' + text.replace('&','&amp;').replace('<','&lt;') + '</w:t></w:r></w:p>')
-        mid_xml = (_rp('If between thirty-one (31) and forty-five (45) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + r31_45 + ' less any payments made prior to the payment of the Repurchase Amount.') +
-                   _rp('If between forty-six (46) and sixty (60) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + r46_60 + ' less any payments made prior to the payment of the Repurchase Amount.'))
     else:
-        # 3-tier: use original 31-60 text with Repurchase_31_60_Day_Amount
-        r31_60 = data.get('Repurchase_31_60_Day_Amount', '')
-        mid_xml = ('<w:p w:rsidR="00D3482D" w:rsidRDefault="00D3482D">'
-                   '<w:pPr><w:spacing w:before="229" w:line="247" w:lineRule="auto"/>'
-                   '<w:ind w:left="120"/></w:pPr>'
-                   '<w:r><w:rPr><w:color w:val="010202"/></w:rPr>'
-                   '<w:t xml:space="preserve">If between thirty-one (31) and sixty (60) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + r31_60 + ' less any payments made prior to the payment of the Repurchase Amount.</w:t></w:r></w:p>')
-    doc = doc.replace('«REPURCHASE_MID_BLOCK»', mid_xml)
+        mid_xml = _build_mid_para('thirty-one', '31', 'sixty', '60', r31_60)
+
+    # Replace the ENTIRE containing paragraph, not just the token text. The
+    # template has «REPURCHASE_MID_BLOCK» as the only content of a <w:t> inside
+    # a <w:r> inside a <w:p>; replacing just the text would inject <w:p>
+    # elements inside a <w:t> and LibreOffice silently drops the content.
+    doc = re.sub(
+        r'<w:p\b[^>]*>(?:(?!<w:p\b).)*?«REPURCHASE_MID_BLOCK».*?</w:p>',
+        lambda m: mid_xml,
+        doc,
+        count=1,
+        flags=re.DOTALL,
+    )
     # P15 token is in its own paragraph — replace the whole paragraph to avoid blank page
     P15_PARA = ('<w:p w:rsidR="00D3482D" w:rsidRDefault="00D3482D">'
                 '<w:pPr><w:pStyle w:val="TableParagraph"/></w:pPr>'
