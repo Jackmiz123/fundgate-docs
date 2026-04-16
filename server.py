@@ -4,6 +4,7 @@ import http.server, json, zipfile, re, os, subprocess, tempfile, shutil, io
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from disclosure_module import build_disclosure_bytes
 from payoff_module import build_payoff_letter
+from zero_balance_module import build_zero_balance_letter
 
 TEMPLATE_WEEKLY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_WEEKLY.docx')
 TEMPLATE_DAILY  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_DAILY.docx')
@@ -428,6 +429,37 @@ class Handler(BaseHTTPRequestHandler):
                     out_bytes = docx_bytes
                     mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                     fname = f'FundGate_Payoff_{merchant}_{date_str}.docx'
+                self.send_response(200)
+                self.send_header('Content-Type', mime)
+                self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')
+                self.send_header('Content-Length', str(len(out_bytes)))
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(out_bytes)
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
+        elif self.path in ('/generate/zerobalance', '/generate/zerobalance/pdf'):
+            want_pdf = self.path.endswith('/pdf')
+            length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(length))
+            try:
+                docx_bytes = build_zero_balance_letter(data)
+                if not docx_bytes:
+                    raise Exception('Missing required zero balance letter fields')
+                merchant = re.sub(r'\s+', '_', data.get('zb_merchant', 'ZeroBalance'))
+                date_str = (data.get('zb_date', '') or '').replace('/', '_')
+                if want_pdf:
+                    out_bytes = docx_to_pdf(docx_bytes)
+                    mime = 'application/pdf'
+                    fname = f'FundGate_ZeroBalance_{merchant}_{date_str}.pdf'
+                else:
+                    out_bytes = docx_bytes
+                    mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    fname = f'FundGate_ZeroBalance_{merchant}_{date_str}.docx'
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
                 self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')

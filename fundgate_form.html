@@ -129,11 +129,31 @@ select{text-transform:uppercase;}
       <div class="lb-title">Payoff Letter</div>
       <div class="lb-sub">Balance & wire details</div>
     </button>
-    <button class="landing-btn" style="opacity:0.4;cursor:not-allowed;" disabled>
+    <button class="landing-btn" onclick="showZeroBalanceForm()">
       <div class="lb-icon">📄</div>
       <div class="lb-title">Zero Balance</div>
-      <div class="lb-sub">Coming soon</div>
+      <div class="lb-sub">Account paid in full</div>
     </button>
+  </div>
+</div>
+
+<!-- ZERO BALANCE LETTER FORM -->
+<div class="content" id="zeroBalanceContent" style="display:none;">
+  <div class="section-card visible">
+    <div class="section-title"><div class="icon">📄</div> Zero Balance Letter</div>
+    <div class="section-sub">Confirm a merchant's account is paid in full ($0.00 balance)</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Letter Date</label><input type="date" id="zb_date"></div>
+      <div class="field-wrap full"><label>Merchant / Business Name</label><input type="text" id="zb_merchant" placeholder="J&J Roofing LLC"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-next" onclick="generateZeroBalance('pdf')" style="flex:1;">⬇ Download PDF</button>
+      <button class="btn btn-back" onclick="generateZeroBalance('docx')" style="flex:1;display:inline-flex;">⬇ Download Word</button>
+    </div>
+    <div class="err-msg" id="zbErr" style="display:none;margin-top:10px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <a href="#" onclick="goBackToLanding();return false;" style="color:var(--muted);font-size:12px;text-decoration:underline;">← Back to menu</a>
+    </div>
   </div>
 </div>
 
@@ -369,6 +389,7 @@ function goBackToLanding() {
   document.getElementById('progressWrap').style.display = 'none';
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('payoffContent').style.display = 'none';
+  document.getElementById('zeroBalanceContent').style.display = 'none';
   const succ = document.getElementById('successScreen');
   if (succ) succ.classList.remove('visible');
   document.getElementById('headerSubtitle').textContent = 'Document Generator';
@@ -380,10 +401,49 @@ function showPayoffForm() {
   document.getElementById('payoffContent').style.display = '';
   document.getElementById('headerSubtitle').textContent = 'Payoff Letter';
   document.title = 'FundGate — Payoff Letter';
-  // Set today's date
   const today = new Date().toISOString().split('T')[0];
   const dateEl = document.getElementById('payoff_date');
   if (dateEl && !dateEl.value) dateEl.value = today;
+}
+
+function showZeroBalanceForm() {
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('zeroBalanceContent').style.display = '';
+  document.getElementById('headerSubtitle').textContent = 'Zero Balance Letter';
+  document.title = 'FundGate — Zero Balance Letter';
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('zb_date');
+  if (dateEl && !dateEl.value) dateEl.value = today;
+}
+
+async function generateZeroBalance(format) {
+  const errEl = document.getElementById('zbErr');
+  errEl.style.display = 'none';
+  function zfv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function zfmtDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
+  const data = {
+    zb_date: zfmtDate(zfv('zb_date')),
+    zb_merchant: zfv('zb_merchant'),
+  };
+  if (!data.zb_date || !data.zb_merchant) {
+    errEl.textContent = '⚠ Please fill in all fields.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const url = format === 'pdf' ? '/generate/zerobalance/pdf' : '/generate/zerobalance';
+  try {
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
+    const blob = await resp.blob();
+    const ext = format === 'pdf' ? 'pdf' : 'docx';
+    const name = `FundGate_ZeroBalance_${data.zb_merchant.replace(/\s+/g,'_')}_${data.zb_date.replace(/\//g,'-')}.${ext}`;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+  } catch(e) {
+    errEl.textContent = '⚠ Error: ' + e.message;
+    errEl.style.display = 'block';
+  }
 }
 
 async function generatePayoff(format) {
