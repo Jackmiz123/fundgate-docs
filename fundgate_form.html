@@ -399,6 +399,7 @@ function goBackToLanding() {
 function showPayoffForm() {
   document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('payoffContent').style.display = '';
+  document.getElementById('navRow').style.display = 'none';
   document.getElementById('headerSubtitle').textContent = 'Payoff Letter';
   document.title = 'FundGate — Payoff Letter';
   const today = new Date().toISOString().split('T')[0];
@@ -409,6 +410,7 @@ function showPayoffForm() {
 function showZeroBalanceForm() {
   document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('zeroBalanceContent').style.display = '';
+  document.getElementById('navRow').style.display = 'none';
   document.getElementById('headerSubtitle').textContent = 'Zero Balance Letter';
   document.title = 'FundGate — Zero Balance Letter';
   const today = new Date().toISOString().split('T')[0];
