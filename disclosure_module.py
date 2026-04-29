@@ -230,15 +230,17 @@ def build_disclosure_bytes(data):
             _tr(_tc(9048, [_para([_run('1.  Total Amount of Funds Provided', bold=True)], after=40)]),
                 _tc(2472, [_para([_run(pp_fmt, bold=True)], after=20, jc='right')])),
             _tr(_tc(9048, [
-                _para([_run('2.  Total Amount of Funds Disbursed', bold=True)], after=40),
+                _para([_run('2.  Amounts Deducted from Funding Provided', bold=True)], after=40),
                 _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=20)], after=40),
                 _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=20)], after=40),
                 _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=20)], after=40),
             ]),
+                _tc(2472, [_para([_run(orig_fmt, bold=True)], after=20, jc='right')])),
+            _tr(_tc(9048, [_para([_run('3.  Total Amount of Funds Disbursed (1 minus 2)', bold=True)], after=40)]),
                 _tc(2472, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(9048, [_para([_run('3.  Total of Payments', bold=True)], after=40)]),
+            _tr(_tc(9048, [_para([_run('4.  Total of Payments', bold=True)], after=40)]),
                 _tc(2472, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(9048, [_para([_run('4.  Total Dollar Cost of Financing', bold=True)], after=40)]),
+            _tr(_tc(9048, [_para([_run('5.  Total Dollar Cost of Financing', bold=True)], after=40)]),
                 _tc(2472, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
         ]
     else:

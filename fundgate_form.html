@@ -2,18 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>FundGate — Weekly Deal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>FundGate — Document Generator</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0a0e1a;--card:#161d2e;--border:#1e2d45;--accent:#00c2ff;--accent2:#0077ff;--text:#e8edf5;--muted:#6b7a99;--success:#00e5a0;--input-bg:#0d1525;}
+  :root{--bg:#f5f6fa;--card:#ffffff;--border:#e0e4ec;--accent:#0077ff;--accent2:#0055cc;--text:#1a1d26;--muted:#6b7a99;--success:#00a878;--input-bg:#f0f2f7;}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;padding-bottom:60px;}
-  .header{background:linear-gradient(135deg,#0a0e1a,#0d1a33);border-bottom:1px solid var(--border);padding:16px 20px 12px;position:sticky;top:0;z-index:100;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;padding-bottom:60px;-webkit-text-size-adjust:100%;}
+  .header{background:linear-gradient(135deg,#0a1628,#0d1f3c);border-bottom:1px solid var(--border);padding:16px 20px 12px;position:sticky;top:0;z-index:100;}
   .header-inner{display:flex;align-items:center;gap:12px;max-width:680px;margin:0 auto;}
-  .logo-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:18px;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(0,194,255,.3);}
+  .logo-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:18px;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(0,119,255,.3);}
   .header-text h1{font-family:'DM Serif Display',serif;font-size:18px;color:#fff;}
-  .header-text p{font-size:11px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;}
+  .header-text p{font-size:11px;color:rgba(255,255,255,.6);letter-spacing:.05em;text-transform:uppercase;}
   .progress-wrap{max-width:680px;margin:0 auto;padding:14px 20px 0;}
   .progress-steps{display:flex;gap:4px;}
   .step-pill{flex:1;height:4px;border-radius:4px;background:var(--border);transition:background .4s;}
@@ -24,7 +26,7 @@
   .step-label.active{color:var(--accent);}
   .step-label.done{color:var(--success);}
   .content{max-width:680px;margin:0 auto;padding:20px 16px 0;}
-  .section-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;display:none;animation:slideIn .35s ease;}
+  .section-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;display:none;animation:slideIn .35s ease;box-shadow:0 1px 4px rgba(0,0,0,.06);}
   .section-card.visible{display:block;}
   @keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   .section-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
@@ -36,7 +38,7 @@
   label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;}
   input,select{background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;width:100%;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;}
   input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,194,255,.1);}
-  input::placeholder{color:#2d3f5a;}
+  input::placeholder{color:#a0a8b8;}
   select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a99' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
   .input-prefix{position:relative;}
   .input-prefix span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
@@ -46,8 +48,8 @@
   .landing h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);text-align:center;}
   .landing p{color:var(--muted);font-size:14px;text-align:center;margin-top:-18px;}
   .landing-buttons{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;margin-top:10px;}
-  .landing-btn{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:32px 20px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;transition:all .25s;display:flex;flex-direction:column;align-items:center;gap:10px;}
-  .landing-btn:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(0,194,255,.15);transform:translateY(-2px);}
+  .landing-btn{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:32px 20px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;transition:all .25s;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .landing-btn:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(0,119,255,.12);transform:translateY(-2px);}
   .landing-btn .lb-icon{font-size:42px;}
   .landing-btn .lb-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);}
   .landing-btn .lb-sub{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
@@ -68,7 +70,7 @@ select{text-transform:uppercase;}
   .nav-row{display:flex;gap:10px;margin-top:20px;max-width:680px;margin-left:auto;margin-right:auto;padding:0 16px;}
   .btn{flex:1;padding:14px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;}
   .btn-back{background:var(--card);border:1px solid var(--border);color:var(--muted);}
-  .btn-next{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px rgba(0,194,255,.25);}
+  .btn-next{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px rgba(0,119,255,.2);}
   .btn-generate{background:linear-gradient(135deg,var(--success),#00a878);color:#000;box-shadow:0 4px 20px rgba(0,229,160,.25);}
   .review-block{margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
   .review-block-title{background:rgba(0,194,255,.07);padding:9px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600;}
@@ -89,18 +91,27 @@ select{text-transform:uppercase;}
   .btn-dl-new{background:var(--card);border:1px solid var(--border);color:var(--muted);}
   .btn-dl-edit{background:rgba(0,194,255,.1);border:1px solid rgba(0,194,255,.3);color:var(--accent);}
   .btn-dl-pdf{background:linear-gradient(135deg,#c0392b,#922b21);color:#fff;box-shadow:0 4px 20px rgba(192,57,43,.3);}
-  .loading-overlay{position:fixed;inset:0;background:rgba(10,14,26,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;display:none;}
+  .loading-overlay{position:fixed;inset:0;background:rgba(245,246,250,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;display:none;}
   .loading-overlay.visible{display:flex;}
   .spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px;}
   @keyframes spin{to{transform:rotate(360deg)}}
   .err-msg{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:#ff4d6d;margin-top:12px;display:none;}
   @media(max-width:400px){.field-grid{grid-template-columns:1fr}.review-grid{grid-template-columns:1fr}.review-item{border-right:none!important}}
+  @media(max-width:680px){
+    input,select{font-size:16px;padding:12px 12px;}
+    .input-prefix input{padding-left:26px;}
+    .btn{padding:16px;font-size:16px;}
+    .landing-btn{padding:24px 16px;}
+    .landing-btn .lb-title{font-size:17px;}
+    .landing-btn .lb-icon{font-size:36px;}
+    .section-card{padding:16px;}
+  }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-inner">
+  <div class="header-inner" onclick="goBackToLanding()" style="cursor:pointer;">
     <div class="logo-mark">F</div>
     <div class="header-text">
       <h1>FundGate LLC</h1>
@@ -165,7 +176,7 @@ select{text-transform:uppercase;}
     <div class="field-grid">
       <div class="field-wrap full"><label>Letter Date</label><input type="date" id="payoff_date"></div>
       <div class="field-wrap full"><label>Merchant / Business Name</label><input type="text" id="payoff_merchant" placeholder="Beck Inc. Pipeline Construction"></div>
-      <div class="field-wrap full" style="margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:10px;background:rgba(0,194,255,0.03);">
+      <div class="field-wrap full" style="margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:10px;background:rgba(0,119,255,0.03);">
         <label style="color:var(--accent);font-size:12px;margin-bottom:6px;display:block;">ORIGINAL PURCHASED AMOUNT <span style="color:var(--muted);font-size:10px;text-transform:none;">(optional — only fill in if merchant is paying off early with an addendum discount)</span></label>
         <div class="input-prefix"><span>$</span><input type="text" id="payoff_original_amount" placeholder="74,950.00"></div>
         <div style="color:var(--muted);font-size:11px;margin-top:6px;">Example: Deal is $74,950 total. Leave blank if no early payoff discount applies.</div>
@@ -239,9 +250,12 @@ select{text-transform:uppercase;}
     <div class="section-title"><div class="icon">💰</div> Deal Terms</div>
     <div class="section-sub">Purchase price, amounts & fees</div>
     <div class="field-grid">
-      <div class="field-wrap"><label>Purchase Price</label><div class="input-prefix"><span>$</span><input type="text" id="Purchase_Price" placeholder="50,000.00"></div></div>
-      <div class="field-wrap"><label>Purchased Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Purchased_Amount" placeholder="70,000.00"></div></div>
-      <div class="field-wrap"><label>Specified Percentage</label><div class="input-prefix"><span>%</span><input type="text" id="Specified_Percentage" placeholder="15"></div></div>
+      <div class="field-wrap full"><label>Purchase Price</label><div class="input-prefix"><span>$</span><input type="text" id="Purchase_Price" placeholder="50,000.00" oninput="calcPurchasedAmt();calcAddendum()"></div></div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div class="field-wrap" style="flex:1;margin:0;"><label>Factor Rate</label><input type="text" id="factor_purchased" placeholder="1.40" oninput="calcPurchasedAmt()"></div>
+        <div class="field-wrap" style="flex:2;margin:0;"><label>Purchased Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Purchased_Amount" placeholder="70,000.00"></div></div>
+      </div>
+      <div class="field-wrap"><label>Specified Percentage <button type="button" onclick="openCalcModal()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;margin-left:6px;vertical-align:middle;">🧮 Calculator</button></label><div class="input-prefix"><span>%</span><input type="text" id="Specified_Percentage" placeholder="15"></div></div>
       <div class="field-wrap"><label>ACH Frequency</label><input type="text" id="ACH_Frequency" value="Weekly" readonly style="background:rgba(255,255,255,0.05);color:var(--text-muted);cursor:not-allowed;"></div>
       <div class="field-wrap" id="wrap_weekly_amt"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00"></div></div>
       <div class="field-wrap" id="wrap_daily_amt"><label>Specific Daily Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
@@ -256,7 +270,13 @@ select{text-transform:uppercase;}
       </div>
       <div id="addendumFields" style="display:contents">
         <div class="field-wrap"><label>Addendum Date</label><input type="date" id="Addendum_Date"></div>
-        <div class="field-wrap"><label>Repurchase: 0–30 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_30_Day_Amount" placeholder="65,000.00"></div></div>
+        <div style="padding:10px;border:1px solid var(--border);border-radius:10px;background:rgba(0,119,255,0.03);margin-bottom:10px;">
+          <p style="color:var(--muted);font-size:11px;margin:0 0 8px;">Enter a factor rate (e.g. 1.20) and the repurchase amount auto-calculates from Purchase Price. Or type the dollar amount directly.</p>
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>0–30 Days Factor</label><input type="text" id="factor_30" placeholder="1.20" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 0–30 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_30_Day_Amount" placeholder="12,000.00"></div></div>
+          </div>
+        </div>
         <div class="field-wrap" style="margin-bottom:6px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" id="use_4tier_repurchase" onchange="toggle4Tier(this.checked)" style="width:18px;height:18px;cursor:pointer">
@@ -264,13 +284,25 @@ select{text-transform:uppercase;}
           </label>
         </div>
         <div id="tier3_block">
-          <div class="field-wrap"><label>Repurchase: 31–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_60_Day_Amount" placeholder="68,000.00"></div></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>31–60 Factor</label><input type="text" id="factor_31_60" placeholder="1.25" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 31–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_60_Day_Amount" placeholder="12,500.00"></div></div>
+          </div>
         </div>
         <div id="tier4_block" style="display:none">
-          <div class="field-wrap"><label>Repurchase: 31–45 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_45_Day_Amount" placeholder="67,000.00"></div></div>
-          <div class="field-wrap"><label>Repurchase: 46–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_46_60_Day_Amount" placeholder="69,000.00"></div></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>31–45 Factor</label><input type="text" id="factor_31_45" placeholder="1.25" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 31–45 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_45_Day_Amount" placeholder="12,500.00"></div></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>46–60 Factor</label><input type="text" id="factor_46_60" placeholder="1.30" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 46–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_46_60_Day_Amount" placeholder="13,000.00"></div></div>
+          </div>
         </div>
-        <div class="field-wrap"><label>After 60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="After_60_Day_Amount" placeholder="70,000.00"></div></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-top:8px;">
+          <div class="field-wrap" style="flex:1;margin:0;"><label>After 60 Factor</label><input type="text" id="factor_after_60" placeholder="1.40" oninput="calcAddendum()"></div>
+          <div class="field-wrap" style="flex:2;margin:0;"><label>After 60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="After_60_Day_Amount" placeholder="14,000.00"></div></div>
+        </div>
       </div>
     </div>
   </div>
@@ -345,11 +377,115 @@ select{text-transform:uppercase;}
   <p style="color:var(--muted);font-size:14px;">Building your contract...</p>
 </div>
 
+<!-- SPECIFIED % CALCULATOR MODAL -->
+<div id="calcModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;max-width:420px;width:90%;margin:auto;position:relative;top:50%;transform:translateY(-50%);box-shadow:0 8px 30px rgba(0,0,0,.15);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;color:var(--text);font-size:16px;">🧮 Specified % Calculator</h3>
+      <button onclick="closeCalcModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">&times;</button>
+    </div>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:16px;">Enter 3 months of bank deposits. The calculator will determine the average receipts and show you the Specified Percentage based on your payment amount.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="field-wrap full"><label>Month 1 Deposits</label><div class="input-prefix"><span>$</span><input type="text" id="calc_month1" placeholder="45,000.00" oninput="calcSpecPct()"></div></div>
+      <div class="field-wrap full"><label>Month 2 Deposits</label><div class="input-prefix"><span>$</span><input type="text" id="calc_month2" placeholder="52,000.00" oninput="calcSpecPct()"></div></div>
+      <div class="field-wrap full"><label>Month 3 Deposits</label><div class="input-prefix"><span>$</span><input type="text" id="calc_month3" placeholder="48,000.00" oninput="calcSpecPct()"></div></div>
+    </div>
+    <div id="calcResult" style="margin-top:16px;padding:12px;border-radius:10px;background:rgba(0,119,255,0.04);border:1px solid var(--border);display:none;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="color:var(--muted);font-size:12px;">Total Deposits (3 months)</span>
+        <span id="calcTotal" style="color:var(--text);font-size:13px;font-weight:600;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span id="calcAvgLabel" style="color:var(--muted);font-size:12px;">Avg Weekly Receipts</span>
+        <span id="calcAvg" style="color:var(--text);font-size:13px;font-weight:600;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span id="calcPaymentLabel" style="color:var(--muted);font-size:12px;">Your Payment Amount</span>
+        <span id="calcPayment" style="color:var(--text);font-size:13px;font-weight:600;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+        <span style="color:var(--accent);font-size:13px;font-weight:600;">Specified Percentage</span>
+        <span id="calcPct" style="color:var(--accent);font-size:16px;font-weight:700;">—</span>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:11px;margin-top:10px;">This is a reference calculation only. You still enter the Specified % manually on the form.</p>
+  </div>
+</div>
+
 <script>
 let currentStep = 0;
 const totalSteps = 5;
 let savedData = null;
 let DEAL_TYPE = 'weekly'; // set by selectDealType() from the landing screen
+
+function openCalcModal() {
+  document.getElementById('calcModal').style.display = 'block';
+  calcSpecPct();
+}
+function closeCalcModal() {
+  document.getElementById('calcModal').style.display = 'none';
+}
+function calcSpecPct() {
+  const parse = (id) => { const v = document.getElementById(id).value.replace(/[^0-9.]/g,''); return parseFloat(v) || 0; };
+  const m1 = parse('calc_month1');
+  const m2 = parse('calc_month2');
+  const m3 = parse('calc_month3');
+  const total = m1 + m2 + m3;
+  const resultDiv = document.getElementById('calcResult');
+
+  if (total <= 0) { resultDiv.style.display = 'none'; return; }
+  resultDiv.style.display = 'block';
+
+  const isDaily = DEAL_TYPE === 'daily';
+  // 3 months ≈ 13 weeks or ~66 business days
+  const avgReceipts = isDaily ? (total / 66) : (total / 13);
+  const paymentField = isDaily ? 'Specific_Daily_Amount' : 'Specific_Weekly_Amount';
+  const paymentVal = parseFloat((document.getElementById(paymentField).value || '0').replace(/[^0-9.]/g,'')) || 0;
+
+  const fmt = (n) => '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  document.getElementById('calcTotal').textContent = fmt(total);
+  document.getElementById('calcAvgLabel').textContent = isDaily ? 'Avg Daily Receipts (66 biz days)' : 'Avg Weekly Receipts (13 weeks)';
+  document.getElementById('calcAvg').textContent = fmt(avgReceipts);
+  document.getElementById('calcPaymentLabel').textContent = isDaily ? 'Your Daily Payment Amount' : 'Your Weekly Payment Amount';
+
+  if (paymentVal > 0) {
+    const pct = (paymentVal / avgReceipts) * 100;
+    document.getElementById('calcPayment').textContent = fmt(paymentVal);
+    document.getElementById('calcPct').textContent = pct.toFixed(2) + '%';
+  } else {
+    document.getElementById('calcPayment').textContent = 'Enter on form first';
+    document.getElementById('calcPct').textContent = 'Need payment amount';
+  }
+}
+
+function calcPurchasedAmt() {
+  const pp = parseFloat((document.getElementById('Purchase_Price').value || '0').replace(/[^0-9.]/g,'')) || 0;
+  const factor = parseFloat(document.getElementById('factor_purchased').value) || 0;
+  if (pp > 0 && factor > 0) {
+    const fmt = (n) => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    document.getElementById('Purchased_Amount').value = fmt(pp * factor);
+  }
+}
+
+function calcAddendum() {
+  const pp = parseFloat((document.getElementById('Purchase_Price').value || '0').replace(/[^0-9.]/g,'')) || 0;
+  if (pp <= 0) return;
+  const fmt = (n) => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const pairs = [
+    ['factor_30', 'Repurchase_30_Day_Amount'],
+    ['factor_31_60', 'Repurchase_31_60_Day_Amount'],
+    ['factor_31_45', 'Repurchase_31_45_Day_Amount'],
+    ['factor_46_60', 'Repurchase_46_60_Day_Amount'],
+    ['factor_after_60', 'After_60_Day_Amount'],
+  ];
+  for (const [fid, did] of pairs) {
+    const factor = parseFloat(document.getElementById(fid).value) || 0;
+    if (factor > 0) {
+      document.getElementById(did).value = fmt(pp * factor);
+    }
+  }
+}
 
 function selectDealType(type) {
   DEAL_TYPE = type; // 'weekly' or 'daily'
