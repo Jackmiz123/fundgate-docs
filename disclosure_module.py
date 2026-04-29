@@ -42,6 +42,18 @@ DISCLOSURE_STATES = {
         'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
         'kansas_labels': False,
     },
+    'UT': {
+        'name': 'Utah',
+        'statute': 'Utah Code \u00a77-27-101 et seq. (Commercial Financing Registration and Disclosure Act, eff. January 1, 2023)',
+        'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
+        'kansas_labels': False,
+    },
+    'TX': {
+        'name': 'Texas',
+        'statute': 'Texas Finance Code Chapter 398 (HB 700, eff. September 1, 2025)',
+        'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
+        'kansas_labels': False,
+    },
 }
 
 def _fmt_currency(val):
