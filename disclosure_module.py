@@ -240,7 +240,7 @@ def build_disclosure_bytes(data):
                 _tc(2472, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
             _tr(_tc(9048, [_para([_run('4.  Total of Payments', bold=True)], after=40)]),
                 _tc(2472, [_para([_run(pa_fmt, bold=True)], after=20, jc='right')])),
-            _tr(_tc(9048, [_para([_run('5.  Total Dollar Cost of Financing', bold=True)], after=40)]),
+            _tr(_tc(9048, [_para([_run('5.  Total Dollar Cost of Financing (4 minus 1)', bold=True)], after=40)]),
                 _tc(2472, [_para([_run(cost_fmt, bold=True)], after=20, jc='right')])),
         ]
     else:
