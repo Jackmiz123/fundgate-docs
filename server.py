@@ -156,6 +156,74 @@ def fill_docx(data):
     doc = doc.replace('«SIGNER2_BLOCK_BANKLOGIN»',  block_bank)
     doc = doc.replace('«SIGNER2_BLOCK_ADDENDUM»',   block_add)
 
+    # ── Consumer Notice page (between Bank Login and Addendum) ───────────────
+    consumer_notice = (
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="120"/><w:jc w:val="center"/></w:pPr>'
+        '<w:r><w:rPr><w:b/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>'
+        '<w:t>CONSUMER NOTICE REGARDING DEBT-RELIEF COMPANIES</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="120"/><w:jc w:val="center"/></w:pPr>'
+        '<w:r><w:rPr><w:i/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr>'
+        '<w:t>For informational purposes only; not a contract and not legally binding.</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="120" w:after="120"/><w:jc w:val="both"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr>'
+        '<w:t xml:space="preserve">Some of the information in this guide is based, in part, on publicly available consumer-protection guidance from the Florida State Attorney General\u2019s Office website and other consumer-protection sources regarding debt-relief and debt-settlement companies. This notice is intended to help protect customers from misleading or unauthorized third-party companies that may contact you after entering into a financial agreement.</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="200" w:after="80"/></w:pPr>'
+        '<w:r><w:rPr><w:b/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>'
+        '<w:t>Be Aware of Third-Party Debt-Relief Companies!</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/><w:jc w:val="both"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr>'
+        '<w:t>Certain companies advertise \u201cdebt relief,\u201d \u201cdebt settlement,\u201d or \u201cnegotiation services.\u201d Consumer-protection agencies have warned that many such companies:</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="40"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(a) Make exaggerated or unrealistic promises</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="40"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(b) Charge large upfront or recurring fees</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="40"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(c) Provide little or no real benefit</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="40"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(d) Use aggressive, misleading, or pressure-based tactics</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(e) Encourage actions that may lead to financial harm</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="80" w:after="120"/><w:jc w:val="both"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>These companies may contact you unexpectedly and may suggest that they can act on your behalf without your involvement.</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="200" w:after="80"/></w:pPr>'
+        '<w:r><w:rPr><w:b/><w:sz w:val="22"/></w:rPr><w:t>Common Red Flags</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Exercise caution if a company:</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="40"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(a) Promises to \u201celiminate\u201d or drastically reduce your obligations</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="40"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(b) Guarantees results that sound too good to be true</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="40"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(c) Requests upfront or monthly fees for \u201crepresentation\u201d</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="40"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(d) Uses pressure-based sales tactics</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>(e) Reaches out unexpectedly, claiming they can intervene for you</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="200" w:after="80"/></w:pPr>'
+        '<w:r><w:rPr><w:b/><w:sz w:val="22"/></w:rPr><w:t>If You Have Questions or Need Assistance</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/><w:jc w:val="both"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>If you ever have questions about your account, experience payment issues, or need clarification on anything, you can contact us directly. There is no need to involve any outside company:</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="40" w:after="40"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Phone: 929-256-7464</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/><w:ind w:left="720"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Email: admin@fundgatellc.com</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="200" w:after="80"/></w:pPr>'
+        '<w:r><w:rPr><w:b/><w:sz w:val="22"/></w:rPr><w:t>Purpose of This Notice</w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="120"/><w:jc w:val="both"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>This document is not part of your contract, is not legal advice, and is not legally binding. It is purely informational and is intended to help customers avoid misleading or unauthorized third-party companies.</w:t></w:r></w:p>'
+    )
+    # Replace the CONSUMER_NOTICE_PAGE token with page break + notice.
+    # The token sits inside: <w:r><w:t>«CONSUMER_NOTICE_PAGE»</w:t></w:r></w:p>
+    # We replace that entire tail of the paragraph, close it, add page break,
+    # then add all notice paragraphs.
+    doc = doc.replace(
+        '<w:t>\u00abCONSUMER_NOTICE_PAGE\u00bb</w:t></w:r></w:p>',
+        '<w:t></w:t></w:r></w:p>'
+        '<w:p><w:pPr><w:pStyle w:val="BodyText"/></w:pPr>'
+        '<w:r><w:br w:type="page"/></w:r></w:p>\n'
+        + consumer_notice
+    )
+
     # ── Repurchase mid-block (3-tier vs 4-tier) ────────────────────────────
     # Build paragraphs that mirror the template's "If within thirty (30)..." styling:
     # each word as its own run, bold on the day numbers (thirty-one, (31), and,
@@ -317,6 +385,27 @@ def fill_docx(data):
             val = val.upper()
         val = safe(val)
         doc = doc.replace(field, val)
+
+    # ── Remove addendum pages if not included ────────────────────────────────
+    include_addendum = data.get('includeAddendum', True)
+    if include_addendum in (False, 'false', 0, '0', None):
+        include_addendum = False
+    if not include_addendum:
+        # Find the Heading1 paragraph containing "ADDENDUM" in the second half
+        # of the document.  Cut from the end of the sectPr paragraph before it
+        # all the way to </w:body>.
+        for _m in re.finditer(r'<w:p\b[^>]*>(?:(?!</w:p>).)*?</w:p>', doc, re.DOTALL):
+            if _m.start() < len(doc) // 2:
+                continue
+            _ptxt = ''.join(re.findall(r'<w:t[^>]*>([^<]*)</w:t>', _m.group()))
+            if 'ADDENDUM' in _ptxt and 'Heading1' in _m.group():
+                _sect = doc.rfind('<w:sectPr', 0, _m.start())
+                _sect_close = doc.find('</w:sectPr>', _sect) + len('</w:sectPr>')
+                _p_close = doc.find('</w:p>', _sect_close) + len('</w:p>')
+                _body_end = doc.rfind('</w:body>')
+                if _p_close > 0 and _body_end > _p_close:
+                    doc = doc[:_p_close] + doc[_body_end:]
+                break
 
     files['word/document.xml'] = doc.encode('utf-8')
     buf = io.BytesIO()
