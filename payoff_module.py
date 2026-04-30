@@ -118,10 +118,10 @@ def build_payoff_letter(data):
     p1 = _add_body_para(doc)
     if original_amt:
         _add_run(p1, 'The original purchased amount on your account is ')
-        _add_run(p1, original_amt, bold=True)
+        _add_run(p1, original_amt)
         _add_run(p1, '. ')
     _add_run(p1, 'The balance of your account as of the date above is ')
-    _add_run(p1, balance, bold=True)
+    _add_run(p1, balance)
     _add_run(p1, '. Please note this balance is subject to change in the event of an ACH debit '
                  'payment being rejected for any reason. If there is a rejection of a payment, you '
                  'will be subject to the appropriate fees detailed in Schedule A of the Merchant '
@@ -130,7 +130,10 @@ def build_payoff_letter(data):
     # ── Body paragraph 2 ──
     p2 = _add_body_para(doc)
     _add_run(p2, 'If you choose to pay this balance today, please wire ')
-    _add_run(p2, wire_amt, bold=True)
+    wire_run = _add_run(p2, wire_amt, bold=True)
+    wire_run.underline = True
+    from docx.enum.text import WD_COLOR_INDEX
+    wire_run.font.highlight_color = WD_COLOR_INDEX.YELLOW
     _add_run(p2, ' to the following account:')
 
     # ── Bank details (indented, bold) ──
@@ -154,17 +157,19 @@ def build_payoff_letter(data):
     # add spacing after bank block
     doc.paragraphs[-1].paragraph_format.space_after = Pt(16)
 
-    # ── PLEASE NOTE disclaimer ──
-    note_para = doc.add_paragraph()
-    note_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    note_para.paragraph_format.space_after = Pt(16)
-    note_run = note_para.add_run(
-        'PLEASE NOTE: IF PAID OFF BY A THIRD PARTY, THIS DISCOUNT WILL BE '
-        'CONSIDERED INVALID.'
-    )
-    note_run.bold = True
-    note_run.font.name = 'Times New Roman'
-    note_run.font.size = Pt(12)
+    # ── PLEASE NOTE disclaimer (only if discount warning enabled) ──
+    show_discount_warning = data.get('payoff_discount_warning', True)
+    if show_discount_warning in (True, 'true', 1, '1'):
+        note_para = doc.add_paragraph()
+        note_para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        note_para.paragraph_format.space_after = Pt(16)
+        note_run = note_para.add_run(
+            'PLEASE NOTE: IF PAID OFF BY A THIRD PARTY, THIS DISCOUNT WILL BE '
+            'CONSIDERED INVALID.'
+        )
+        note_run.bold = True
+        note_run.font.name = 'Times New Roman'
+        note_run.font.size = Pt(12)
 
     # ── Balance adjustments paragraph ──
     p3 = _add_body_para(doc)
