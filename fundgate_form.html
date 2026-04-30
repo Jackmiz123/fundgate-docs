@@ -158,8 +158,8 @@ select{text-transform:uppercase;}
       <div class="field-wrap full"><label>Merchant / Business Name</label><input type="text" id="zb_merchant" placeholder="J&J Roofing LLC"></div>
     </div>
     <div style="display:flex;gap:10px;margin-top:20px;">
-      <button class="btn btn-next" onclick="generateZeroBalance('pdf')" style="flex:1;">⬇ Download PDF</button>
-      <button class="btn btn-back" onclick="generateZeroBalance('docx')" style="flex:1;display:inline-flex;">⬇ Download Word</button>
+      <button class="btn btn-next" onclick="generateZeroBalance('pdf', this)" style="flex:1;">⬇ Download PDF</button>
+      <button class="btn btn-back" onclick="generateZeroBalance('docx', this)" style="flex:1;display:inline-flex;">⬇ Download Word</button>
     </div>
     <div class="err-msg" id="zbErr" style="display:none;margin-top:10px;"></div>
     <div style="text-align:center;margin-top:16px;">
@@ -201,8 +201,8 @@ select{text-transform:uppercase;}
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:20px;">
-      <button class="btn btn-next" onclick="generatePayoff('pdf')" style="flex:1;">⬇ Download PDF</button>
-      <button class="btn btn-back" onclick="generatePayoff('docx')" style="flex:1;display:inline-flex;">⬇ Download Word</button>
+      <button class="btn btn-next" onclick="generatePayoff('pdf', this)" style="flex:1;">⬇ Download PDF</button>
+      <button class="btn btn-back" onclick="generatePayoff('docx', this)" style="flex:1;display:inline-flex;">⬇ Download Word</button>
     </div>
     <div class="err-msg" id="payoffErr" style="display:none;margin-top:10px;"></div>
     <div style="text-align:center;margin-top:16px;">
@@ -561,13 +561,13 @@ function showZeroBalanceForm() {
   if (dateEl && !dateEl.value) dateEl.value = today;
 }
 
-async function generateZeroBalance(format) {
+async function generateZeroBalance(format, btn) {
   const errEl = document.getElementById('zbErr');
   errEl.style.display = 'none';
-  const btns = event.target.closest('div').querySelectorAll('button');
-  const origText = event.target.textContent;
+  const btns = btn.closest('div').querySelectorAll('button');
+  const origText = btn.textContent;
   btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
-  event.target.textContent = '⏳ Generating...';
+  btn.textContent = '⏳ Generating...';
   function zfv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
   function zfmtDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
   const data = {
@@ -578,7 +578,7 @@ async function generateZeroBalance(format) {
     errEl.textContent = '⚠ Please fill in all fields.';
     errEl.style.display = 'block';
     btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
-    event.target.textContent = origText;
+    btn.textContent = origText;
     return;
   }
   const url = format === 'pdf' ? '/generate/zerobalance/pdf' : '/generate/zerobalance';
@@ -596,17 +596,17 @@ async function generateZeroBalance(format) {
     errEl.style.display = 'block';
   } finally {
     btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
-    event.target.textContent = origText;
+    btn.textContent = origText;
   }
 }
 
-async function generatePayoff(format) {
+async function generatePayoff(format, btn) {
   const errEl = document.getElementById('payoffErr');
   errEl.style.display = 'none';
-  const btns = event.target.closest('div').querySelectorAll('button');
-  const origText = event.target.textContent;
+  const btns = btn.closest('div').querySelectorAll('button');
+  const origText = btn.textContent;
   btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
-  event.target.textContent = '⏳ Generating...';
+  btn.textContent = '⏳ Generating...';
 
   function pfv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
   function pfmtDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
@@ -629,7 +629,7 @@ async function generatePayoff(format) {
     errEl.textContent = '⚠ Please fill in all fields.';
     errEl.style.display = 'block';
     btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
-    event.target.textContent = origText;
+    btn.textContent = origText;
     return;
   }
 
@@ -654,7 +654,7 @@ async function generatePayoff(format) {
     errEl.style.display = 'block';
   } finally {
     btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
-    event.target.textContent = origText;
+    btn.textContent = origText;
   }
 }
 
