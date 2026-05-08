@@ -386,26 +386,53 @@ def fill_docx(data):
         val = safe(val)
         doc = doc.replace(field, val)
 
-    # ── Remove addendum pages if not included ────────────────────────────────
+    # ── Remove addendum content but KEEP signature page ──────────────────────
     include_addendum = data.get('includeAddendum', True)
     if include_addendum in (False, 'false', 0, '0', None):
         include_addendum = False
     if not include_addendum:
         # Find the Heading1 paragraph containing "ADDENDUM" in the second half
         # of the document.  Cut from the end of the sectPr paragraph before it
-        # all the way to </w:body>.
+        # to the end of the sectPr paragraph before the signature page.
+        # This removes the addendum CONTENT only (page 20) and keeps the
+        # signature page (page 21) intact.
+        add_match = None
         for _m in re.finditer(r'<w:p\b[^>]*>(?:(?!</w:p>).)*?</w:p>', doc, re.DOTALL):
             if _m.start() < len(doc) // 2:
                 continue
             _ptxt = ''.join(re.findall(r'<w:t[^>]*>([^<]*)</w:t>', _m.group()))
             if 'ADDENDUM' in _ptxt and 'Heading1' in _m.group():
-                _sect = doc.rfind('<w:sectPr', 0, _m.start())
-                _sect_close = doc.find('</w:sectPr>', _sect) + len('</w:sectPr>')
-                _p_close = doc.find('</w:p>', _sect_close) + len('</w:p>')
-                _body_end = doc.rfind('</w:body>')
-                if _p_close > 0 and _body_end > _p_close:
-                    doc = doc[:_p_close] + doc[_body_end:]
+                add_match = _m
                 break
+        # Find the signature-page heading paragraph "By their signatures..."
+        sig_match = None
+        if add_match is not None:
+            for _m in re.finditer(r'<w:p\b[^>]*>(?:(?!</w:p>).)*?</w:p>', doc, re.DOTALL):
+                if _m.start() <= add_match.end():
+                    continue
+                _ptxt = ''.join(re.findall(r'<w:t[^>]*>([^<]*)</w:t>', _m.group()))
+                if 'By their signatures' in _ptxt:
+                    sig_match = _m
+                    break
+        if add_match is not None and sig_match is not None:
+            # Cut point A: end of paragraph that contains the sectPr right
+            # before the ADDENDUM heading (preserves Consumer Notice page break).
+            _sect_a = doc.rfind('<w:sectPr', 0, add_match.start())
+            _sect_a_close = doc.find('</w:sectPr>', _sect_a) + len('</w:sectPr>')
+            _p_close_a = doc.find('</w:p>', _sect_a_close) + len('</w:p>')
+            # Cut point B: end of paragraph that contains the sectPr right
+            # before the signature-page heading (preserves sig page intact).
+            _sect_b = doc.rfind('<w:sectPr', 0, sig_match.start())
+            _sect_b_close = doc.find('</w:sectPr>', _sect_b) + len('</w:sectPr>')
+            _p_close_b = doc.find('</w:p>', _sect_b_close) + len('</w:p>')
+            if 0 < _p_close_a < _p_close_b:
+                doc = doc[:_p_close_a] + doc[_p_close_b:]
+                # Update wording on the sig page since there is no addendum:
+                # "...bound by this addendum." → "...bound by this Agreement."
+                doc = doc.replace(
+                    '<w:t xml:space="preserve"> addendum.</w:t>',
+                    '<w:t xml:space="preserve"> Agreement.</w:t>'
+                )
 
     files['word/document.xml'] = doc.encode('utf-8')
     buf = io.BytesIO()
