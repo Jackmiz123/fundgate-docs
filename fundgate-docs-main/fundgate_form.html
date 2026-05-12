@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>FundGate — Document Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f5f6fa;--card:#ffffff;--border:#e0e4ec;--accent:#0077ff;--accent2:#0055cc;--text:#1a1d26;--muted:#6b7a99;--success:#00a878;--input-bg:#f0f2f7;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;padding-bottom:60px;-webkit-text-size-adjust:100%;}
+  .header{background:linear-gradient(135deg,#0a1628,#0d1f3c);border-bottom:1px solid var(--border);padding:16px 20px 12px;position:sticky;top:0;z-index:100;}
+  .header-inner{display:flex;align-items:center;gap:12px;max-width:680px;margin:0 auto;}
+  .logo-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:18px;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(0,119,255,.3);}
+  .header-text h1{font-family:'DM Serif Display',serif;font-size:18px;color:#fff;}
+  .header-text p{font-size:11px;color:rgba(255,255,255,.6);letter-spacing:.05em;text-transform:uppercase;}
+  .progress-wrap{max-width:680px;margin:0 auto;padding:14px 20px 0;}
+  .progress-steps{display:flex;gap:4px;}
+  .step-pill{flex:1;height:4px;border-radius:4px;background:var(--border);transition:background .4s;}
+  .step-pill.active{background:var(--accent);}
+  .step-pill.done{background:var(--success);}
+  .step-labels{display:flex;justify-content:space-between;margin-top:6px;}
+  .step-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;transition:color .3s;}
+  .step-label.active{color:var(--accent);}
+  .step-label.done{color:var(--success);}
+  .content{max-width:680px;margin:0 auto;padding:20px 16px 0;}
+  .section-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;display:none;animation:slideIn .35s ease;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .section-card.visible{display:block;}
+  @keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .section-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+  .section-title .icon{width:28px;height:28px;border-radius:8px;background:rgba(0,194,255,.12);display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .section-sub{font-size:12px;color:var(--muted);margin-bottom:18px;margin-left:36px;}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-wrap{display:flex;flex-direction:column;gap:5px;}
+  .field-wrap.full{grid-column:1/-1;}
+  label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;}
+  input,select{background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;width:100%;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,194,255,.1);}
+  input::placeholder{color:#a0a8b8;}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a99' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+  .input-prefix{position:relative;}
+  .input-prefix span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
+
+  /* Landing page selector */
+  .landing{max-width:680px;margin:40px auto 0;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:30px;}
+  .landing h2{font-family:'DM Serif Display',serif;font-size:24px;color:var(--text);text-align:center;}
+  .landing p{color:var(--muted);font-size:14px;text-align:center;margin-top:-18px;}
+  .landing-buttons{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;margin-top:10px;}
+  .landing-btn{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:32px 20px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;transition:all .25s;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .landing-btn:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(0,119,255,.12);transform:translateY(-2px);}
+  .landing-btn .lb-icon{font-size:42px;}
+  .landing-btn .lb-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);}
+  .landing-btn .lb-sub{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+  @media (max-width:480px){
+    .landing-buttons{grid-template-columns:1fr;}
+  }
+  input:not(#Owner_Guarantor_1):not(#Merchant_1):not(#Authorized_Signer_Name):not(#Title){text-transform:uppercase;}
+select{text-transform:uppercase;}
+  .input-prefix input{padding-left:24px;}
+  .section-divider{border:none;border-top:1px solid var(--border);margin:14px 0;grid-column:1/-1;}
+  .section-label{grid-column:1/-1;font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;display:flex;align-items:center;justify-content:space-between;}
+  .toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+  .toggle input{opacity:0;width:0;height:0;}
+  .toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:24px;cursor:pointer;transition:.3s;}
+  .toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+  .toggle input:checked+.toggle-slider{background:var(--accent);}
+  .toggle input:checked+.toggle-slider:before{transform:translateX(20px);}
+  .nav-row{display:flex;gap:10px;margin-top:20px;max-width:680px;margin-left:auto;margin-right:auto;padding:0 16px;}
+  .btn{flex:1;padding:14px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;}
+  .btn-back{background:var(--card);border:1px solid var(--border);color:var(--muted);}
+  .btn-next{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px rgba(0,119,255,.2);}
+  .btn-generate{background:linear-gradient(135deg,var(--success),#00a878);color:#000;box-shadow:0 4px 20px rgba(0,229,160,.25);}
+  .review-block{margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+  .review-block-title{background:rgba(0,194,255,.07);padding:9px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600;}
+  .review-grid{display:grid;grid-template-columns:1fr 1fr;}
+  .review-item{padding:10px 14px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);}
+  .review-item:nth-child(even){border-right:none;}
+  .review-item label{font-size:10px;color:var(--muted);}
+  .review-item .val{font-size:13px;color:var(--text);margin-top:2px;word-break:break-word;}
+  .success-screen{text-align:center;padding:40px 16px;display:none;}
+  .success-screen.visible{display:block;}
+  .check-circle{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--success),#00a878);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;box-shadow:0 0 40px rgba(0,229,160,.3);animation:pop .5s cubic-bezier(.175,.885,.32,1.275);}
+  @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  .success-screen h2{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:8px;}
+  .success-screen p{color:var(--muted);font-size:14px;margin-bottom:28px;}
+  .btn-dl{display:block;width:100%;max-width:340px;margin:0 auto 12px;padding:15px;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+  .btn-dl-docx{background:linear-gradient(135deg,#2b5fca,#1a3fa0);color:#fff;box-shadow:0 4px 20px rgba(43,95,202,.3);}
+  .btn-dl-docx:hover{transform:translateY(-1px);}
+  .btn-dl-new{background:var(--card);border:1px solid var(--border);color:var(--muted);}
+  .btn-dl-edit{background:rgba(0,194,255,.1);border:1px solid rgba(0,194,255,.3);color:var(--accent);}
+  .btn-dl-pdf{background:linear-gradient(135deg,#c0392b,#922b21);color:#fff;box-shadow:0 4px 20px rgba(192,57,43,.3);}
+  .loading-overlay{position:fixed;inset:0;background:rgba(245,246,250,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;display:none;}
+  .loading-overlay.visible{display:flex;}
+  .spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .err-msg{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:#ff4d6d;margin-top:12px;display:none;}
+  @media(max-width:400px){.field-grid{grid-template-columns:1fr}.review-grid{grid-template-columns:1fr}.review-item{border-right:none!important}}
+  @media(max-width:680px){
+    input,select{font-size:16px;padding:12px 12px;}
+    .input-prefix input{padding-left:26px;}
+    .btn{padding:16px;font-size:16px;}
+    .landing-btn{padding:24px 16px;}
+    .landing-btn .lb-title{font-size:17px;}
+    .landing-btn .lb-icon{font-size:36px;}
+    .section-card{padding:16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner" onclick="goBackToLanding()" style="cursor:pointer;">
+    <div class="logo-mark">F</div>
+    <div class="header-text">
+      <h1>FundGate LLC</h1>
+      <p id="headerSubtitle">Contract Generator</p>
+    </div>
+  </div>
+</div>
+
+<!-- LANDING SELECTOR — shown first, lets the user pick Daily vs Weekly -->
+<div class="landing" id="landingScreen">
+  <!-- STEP 1: Entity selection -->
+  <div id="entityStep">
+    <h2>Choose Entity</h2>
+    <p>Which company is this deal under?</p>
+    <div class="landing-buttons">
+      <button class="landing-btn" onclick="selectEntity('fundgate')">
+        <div class="lb-icon" style="font-family:'DM Serif Display',serif;color:var(--accent);">FG</div>
+        <div class="lb-title">FundGate LLC</div>
+        <div class="lb-sub">Standard funding entity</div>
+      </button>
+      <button class="landing-btn" onclick="selectEntity('fundkey')" style="border-color:#1a3fa0;">
+        <div class="lb-icon">🔒</div>
+        <div class="lb-title">Fundkey LLC</div>
+        <div class="lb-sub">CA & multi-state funding</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2A: FundGate options (unchanged from prior versions) -->
+  <div id="fundgateOptions" style="display:none;">
+    <button class="back-link" onclick="backToEntityStep()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;margin-bottom:8px;padding:0;">← Back to entity selection</button>
+    <h2>FundGate LLC — Choose Document</h2>
+    <p>Select what you need to generate.</p>
+    <div class="landing-buttons">
+      <button class="landing-btn" onclick="selectDealType('weekly')">
+        <div class="lb-icon">📅</div>
+        <div class="lb-title">Weekly Contract</div>
+        <div class="lb-sub">Debits once per week</div>
+      </button>
+      <button class="landing-btn" onclick="selectDealType('daily')">
+        <div class="lb-icon">🗓️</div>
+        <div class="lb-title">Daily Contract</div>
+        <div class="lb-sub">Debits every business day</div>
+      </button>
+      <button class="landing-btn" onclick="showPayoffForm()">
+        <div class="lb-icon">💲</div>
+        <div class="lb-title">Payoff Letter</div>
+        <div class="lb-sub">Balance & wire details</div>
+      </button>
+      <button class="landing-btn" onclick="showZeroBalanceForm()">
+        <div class="lb-icon">📄</div>
+        <div class="lb-title">Zero Balance</div>
+        <div class="lb-sub">Account paid in full</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2B: Fundkey options -->
+  <div id="fundkeyOptions" style="display:none;">
+    <button class="back-link" onclick="backToEntityStep()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;margin-bottom:8px;padding:0;">← Back to entity selection</button>
+    <h2>Fundkey LLC — Choose Document</h2>
+    <p>All states supported. CA deals include the SB 1235 disclosure.</p>
+    <div class="landing-buttons">
+      <button class="landing-btn" onclick="selectDealType('weekly', true)" style="border-color:#1a3fa0;">
+        <div class="lb-icon">📅</div>
+        <div class="lb-title">Weekly Contract</div>
+        <div class="lb-sub">Fundkey · Debits once per week</div>
+      </button>
+      <button class="landing-btn" onclick="selectDealType('daily', true)" style="border-color:#1a3fa0;">
+        <div class="lb-icon">🗓️</div>
+        <div class="lb-title">Daily Contract</div>
+        <div class="lb-sub">Fundkey · Debits every business day</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ZERO BALANCE LETTER FORM -->
+<div class="content" id="zeroBalanceContent" style="display:none;">
+  <div class="section-card visible">
+    <div class="section-title"><div class="icon">📄</div> Zero Balance Letter</div>
+    <div class="section-sub">Confirm a merchant's account is paid in full ($0.00 balance)</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Letter Date</label><input type="date" id="zb_date"></div>
+      <div class="field-wrap full"><label>Merchant / Business Name</label><input type="text" id="zb_merchant" placeholder="J&J Roofing LLC"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-next" onclick="generateZeroBalance('pdf', this)" style="flex:1;">⬇ Download PDF</button>
+      <button class="btn btn-back" onclick="generateZeroBalance('docx', this)" style="flex:1;display:inline-flex;">⬇ Download Word</button>
+    </div>
+    <div class="err-msg" id="zbErr" style="display:none;margin-top:10px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <a href="#" onclick="goBackToLanding();return false;" style="color:var(--muted);font-size:12px;text-decoration:underline;">← Back to menu</a>
+    </div>
+  </div>
+</div>
+
+<!-- PAYOFF LETTER FORM — separate from the contract flow -->
+<div class="content" id="payoffContent" style="display:none;">
+  <div class="section-card visible">
+    <div class="section-title"><div class="icon">💲</div> Payoff Letter</div>
+    <div class="section-sub">Generate a payoff letter with balance and wire instructions</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Letter Date</label><input type="date" id="payoff_date"></div>
+      <div class="field-wrap full"><label>Merchant / Business Name</label><input type="text" id="payoff_merchant" placeholder="Beck Inc. Pipeline Construction"></div>
+      <div class="field-wrap full" style="margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:10px;background:rgba(0,119,255,0.03);">
+        <label style="color:var(--accent);font-size:12px;margin-bottom:6px;display:block;">ORIGINAL PURCHASED AMOUNT <span style="color:var(--muted);font-size:10px;text-transform:none;">(optional — only fill in if merchant is paying off early with an addendum discount)</span></label>
+        <div class="input-prefix"><span>$</span><input type="text" id="payoff_original_amount" placeholder="74,950.00"></div>
+        <div style="color:var(--muted);font-size:11px;margin-top:6px;">Example: Deal is $74,950 total. Leave blank if no early payoff discount applies.</div>
+      </div>
+      <div class="field-wrap full" style="margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:10px;">
+        <label>CURRENT BALANCE <span style="color:var(--accent);font-size:10px;text-transform:none;">* required</span></label>
+        <div style="color:var(--muted);font-size:11px;margin-bottom:6px;">What the merchant owes as of today. If addendum applies, use the discounted repurchase amount. If no addendum, use the full deal balance.</div>
+        <div class="input-prefix"><span>$</span><input type="text" id="payoff_balance" placeholder="60,000.00"></div>
+        <div style="color:var(--muted);font-size:11px;margin-top:6px;">Example: 30-day repurchase = $60,000 → Current Balance = <b>$60,000</b></div>
+      </div>
+      <div class="field-wrap full" style="margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:10px;">
+        <label>PAYOFF WIRE AMOUNT <span style="color:var(--accent);font-size:10px;text-transform:none;">* required</span></label>
+        <div style="color:var(--muted);font-size:11px;margin-bottom:6px;">Current balance minus any payments already received. This is what the merchant wires to settle.</div>
+        <div class="input-prefix"><span>$</span><input type="text" id="payoff_wire_amount" placeholder="50,000.00"></div>
+        <div style="color:var(--muted);font-size:11px;margin-top:6px;">Example: Balance is $60,000, merchant paid $10,000 → Wire Amount = <b>$50,000</b></div>
+      </div>
+      <div class="field-wrap full" style="margin-top:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label class="toggle"><input type="checkbox" id="payoff_discount_warning" checked><span class="toggle-slider"></span></label>
+          <span style="font-size:13px;color:var(--text);">Include "IF PAID OFF BY A THIRD PARTY, THIS DISCOUNT WILL BE CONSIDERED INVALID" warning</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-next" onclick="generatePayoff('pdf', this)" style="flex:1;">⬇ Download PDF</button>
+      <button class="btn btn-back" onclick="generatePayoff('docx', this)" style="flex:1;display:inline-flex;">⬇ Download Word</button>
+    </div>
+    <div class="err-msg" id="payoffErr" style="display:none;margin-top:10px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <a href="#" onclick="goBackToLanding();return false;" style="color:var(--muted);font-size:12px;text-decoration:underline;">← Back to menu</a>
+    </div>
+  </div>
+</div>
+
+<div class="progress-wrap" id="progressWrap" style="display:none;">
+  <div class="progress-steps">
+    <div class="step-pill active" id="pill0"></div>
+    <div class="step-pill" id="pill1"></div>
+    <div class="step-pill" id="pill2"></div>
+    <div class="step-pill" id="pill3"></div>
+    <div class="step-pill" id="pill4"></div>
+  </div>
+  <div class="step-labels">
+    <span class="step-label active" id="lbl0">Merchant</span>
+    <span class="step-label" id="lbl1">Deal</span>
+    <span class="step-label" id="lbl2">Banking</span>
+    <span class="step-label" id="lbl3">Guarantor</span>
+    <span class="step-label" id="lbl4">Review</span>
+  </div>
+</div>
+
+<div class="content" id="mainContent" style="display:none;">
+  <!-- STEP 0 -->
+  <div class="section-card visible" id="step0">
+    <div class="section-title"><div class="icon">🏢</div> Merchant Information</div>
+    <div class="section-sub">Enter once — flows to all pages automatically</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Agreement Date</label><input type="date" id="Agreement_Date"></div>
+      <div class="field-wrap full"><label>Merchant Legal Name</label><input type="text" id="Merchant_Legal_Name" placeholder="Full legal business name"></div>
+      <div class="field-wrap full"><label>DBA</label><input type="text" id="Merchant_DBA" placeholder="Trade name if different"></div>
+      <div class="field-wrap"><label>Entity Type</label>
+        <select id="Entity_Type"><option value="">Select...</option><option>LLC</option><option>Corporation</option><option>S-Corporation</option><option>Partnership</option><option>Sole Proprietorship</option></select>
+      </div>
+      <div class="field-wrap"><label>State of Organization</label>
+        <select id="State_of_Organization"><option value="">Select...</option><option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option><option>CO</option><option>CT</option><option>DE</option><option>FL</option><option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option><option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option></select>
+      </div>
+      <div class="field-wrap full"><label>Address of Executive Offices</label><input type="text" id="Executive_Office_Address" placeholder="Street, City, State, ZIP"></div>
+      <div class="field-wrap full"><label>Mailing Address <span style="color:var(--muted);font-size:10px;">(blank = same as above)</span></label><input type="text" id="Mailing_Address" placeholder="Leave blank if same"></div>
+      <div class="field-wrap"><label>Business Start Date (mm/yy)</label><input type="text" id="Business_Start_Date" placeholder="01/20"></div>
+      <div class="field-wrap"><label>Federal EIN</label><input type="text" id="Federal_EIN" placeholder="XX-XXXXXXX"></div>
+      <div class="field-wrap full"><label>Business Phone</label><input type="tel" id="Business_Phone" oninput="this.value=fmtPhone(this.value)" placeholder="(000) 000-0000"></div>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="section-card" id="step1">
+    <div class="section-title"><div class="icon">💰</div> Deal Terms</div>
+    <div class="section-sub">Purchase price, amounts & fees</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Purchase Price</label><div class="input-prefix"><span>$</span><input type="text" id="Purchase_Price" placeholder="50,000.00" oninput="calcPurchasedAmt();calcAddendum()"></div></div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div class="field-wrap" style="flex:1;margin:0;"><label>Factor Rate</label><input type="text" id="factor_purchased" placeholder="1.40" oninput="calcPurchasedAmt()"></div>
+        <div class="field-wrap" style="flex:2;margin:0;"><label>Purchased Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Purchased_Amount" placeholder="70,000.00"></div></div>
+      </div>
+      <div class="field-wrap"><label>Specified Percentage <button type="button" onclick="openCalcModal()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;margin-left:6px;vertical-align:middle;">🧮 Calculator</button></label><div class="input-prefix"><span>%</span><input type="text" id="Specified_Percentage" placeholder="15"></div></div>
+      <div class="field-wrap"><label>ACH Frequency</label><input type="text" id="ACH_Frequency" value="Weekly" readonly style="background:rgba(255,255,255,0.05);color:var(--text-muted);cursor:not-allowed;"></div>
+      <div class="field-wrap" id="wrap_weekly_amt"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00"></div></div>
+      <div class="field-wrap" id="wrap_daily_amt"><label>Specific Daily Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
+      <div class="field-wrap full" id="wrap_ca_avg_rev" style="display:none;"><label>Avg Monthly Revenue (CA Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="CA_Avg_Monthly_Revenue" placeholder="120,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives Estimated Term on the disclosure.</div></div>
+      <hr class="section-divider">
+      <div class="section-label">Appendix A — Fees</div>
+      <div class="field-wrap"><label>ACH Program Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="ACH_Program_Fee_Percentage" placeholder="2.5"></div></div>
+      <div class="field-wrap"><label>Origination Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="Origination_Fee_Percentage" placeholder="3"></div></div>
+      <hr class="section-divider">
+      <div class="section-label">
+        <span>Addendum — Repurchase Schedule</span>
+        <label class="toggle"><input type="checkbox" id="includeAddendum" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div id="addendumFields" style="display:contents">
+        <div class="field-wrap"><label>Addendum Date</label><input type="date" id="Addendum_Date"></div>
+        <div style="padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card);margin-bottom:10px;">
+          <p style="color:var(--muted);font-size:11px;margin:0 0 8px;">Enter a factor rate (e.g. 1.20) and the repurchase amount auto-calculates from Purchase Price. Or type the dollar amount directly.</p>
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>0–30 Days Factor</label><input type="text" id="factor_30" placeholder="1.20" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 0–30 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_30_Day_Amount" placeholder="12,000.00"></div></div>
+          </div>
+        </div>
+        <div class="field-wrap" style="margin-bottom:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="use_4tier_repurchase" onchange="toggle4Tier(this.checked)" style="width:18px;height:18px;cursor:pointer">
+            Use 4-tier repurchase schedule (31–45 / 46–60 days)
+          </label>
+        </div>
+        <div id="tier3_block">
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>31–60 Factor</label><input type="text" id="factor_31_60" placeholder="1.25" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 31–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_60_Day_Amount" placeholder="12,500.00"></div></div>
+          </div>
+        </div>
+        <div id="tier4_block" style="display:none">
+          <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>31–45 Factor</label><input type="text" id="factor_31_45" placeholder="1.25" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 31–45 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_45_Day_Amount" placeholder="12,500.00"></div></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>46–60 Factor</label><input type="text" id="factor_46_60" placeholder="1.30" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 46–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_46_60_Day_Amount" placeholder="13,000.00"></div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-top:8px;">
+          <div class="field-wrap" style="flex:1;margin:0;"><label>After 60 Factor</label><input type="text" id="factor_after_60" placeholder="1.40" oninput="calcAddendum()"></div>
+          <div class="field-wrap" style="flex:2;margin:0;"><label>After 60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="After_60_Day_Amount" placeholder="14,000.00"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="section-card" id="step2">
+    <div class="section-title"><div class="icon">🏦</div> Banking Details</div>
+    <div class="section-sub">ACH & account information for Appendix B</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Bank Name</label><input type="text" id="Bank_Name" placeholder="Chase, Bank of America, etc."></div>
+      <div class="field-wrap"><label>Routing Number</label><input type="text" id="Routing_Number" placeholder="021000021" maxlength="9"></div>
+      <div class="field-wrap"><label>Account Number</label><input type="text" id="Account_Number" placeholder="XXXXXXXXXX"></div>
+      <div class="field-wrap full"><label>Authorized Signer Name</label><input type="text" id="Authorized_Signer_Name" placeholder="Full name"></div>
+      <div class="field-wrap full"><label>Signer Title</label><input type="text" id="Signer_Title" placeholder="President / Owner / Manager"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="section-card" id="step3">
+    <div class="section-title"><div class="icon">✍️</div> Merchant & Guarantor</div>
+    <div class="section-sub">Flows to all signature pages automatically</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Merchant #1 (Owner Print Name)</label><input type="text" id="Merchant_1" placeholder="Owner's full name"></div>
+      <div class="field-wrap full"><label>Title</label><input type="text" id="Title" placeholder="Owner / President"></div>
+      <hr class="section-divider">
+      <div class="section-label">Guarantor #1</div>
+      <div class="field-wrap full"><label>Guarantor Name</label><input type="text" id="Owner_Guarantor_1" placeholder="Full legal name"></div>
+      <div class="field-wrap"><label>Guarantor SSN</label><input type="text" id="Guarantor_SSN" placeholder="XXX-XX-XXXX" maxlength="11"></div>
+      <div class="field-wrap"><label>Driver's License #</label><input type="text" id="Guarantor_Driver_License" placeholder="License number"></div>
+
+      <hr class="section-divider">
+      <div class="field-wrap full" style="display:flex;align-items:center;gap:12px;">
+        <input type="checkbox" id="twoSigners" style="width:20px;height:20px;accent-color:var(--accent);cursor:pointer;" onchange="toggleSigner2()">
+        <label for="twoSigners" style="font-weight:600;cursor:pointer;margin:0;">Add Second Signer / Guarantor</label>
+      </div>
+
+      <div id="signer2Fields" style="display:none;width:100%;">
+        <div class="section-label" style="margin-top:8px;">Guarantor #2</div>
+        <div class="field-wrap full"><label>Guarantor #2 Name</label><input type="text" id="Owner_Guarantor_2" placeholder="Full legal name"></div>
+        <div class="field-wrap full"><label>Title</label><input type="text" id="Title_2" placeholder="Owner / Member / President"></div>
+        <div class="field-wrap"><label>Guarantor #2 SSN</label><input type="text" id="Guarantor_SSN_2" placeholder="XXX-XX-XXXX" maxlength="11"></div>
+        <div class="field-wrap"><label>Guarantor #2 Driver's License #</label><input type="text" id="Guarantor_DL_2" placeholder="License number"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="section-card" id="step4">
+    <div class="section-title"><div class="icon">📋</div> Review Deal</div>
+    <div class="section-sub">Confirm everything before generating</div>
+    <div id="reviewContent"></div>
+    <div class="err-msg" id="errMsg"></div>
+  </div>
+</div>
+
+<div class="nav-row" id="navRow">
+  <button class="btn btn-back" id="btnBack" onclick="navigate(-1)" style="display:none;">← Back</button>
+  <button class="btn btn-next" id="btnNext" onclick="navigate(1)">Continue →</button>
+</div>
+
+<div class="success-screen" id="successScreen">
+  <div class="check-circle">✓</div>
+  <h2>Contract Ready!</h2>
+  <p>Your FundGate Weekly Agreement has been generated.</p>
+  <div id="downloadButtons"></div>
+  <button class="btn-dl btn-dl-edit" onclick="editDeal()">✏️ Edit Deal</button>
+  <button class="btn-dl btn-dl-new" onclick="resetForm()">+ New Deal</button>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p style="color:var(--muted);font-size:14px;">Building your contract...</p>
+</div>
+
+<!-- SPECIFIED % CALCULATOR MODAL -->
+<div id="calcModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;max-width:420px;width:90%;margin:auto;position:relative;top:50%;transform:translateY(-50%);box-shadow:0 8px 30px rgba(0,0,0,.15);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;color:var(--text);font-size:16px;">🧮 Specified % Calculator</h3>
+      <button onclick="closeCalcModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">&times;</button>
+    </div>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:16px;">Enter 3 months of bank deposits. The calculator will determine the average receipts and show you the Specified Percentage based on your payment amount.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="field-wrap full"><label>Month 1 Deposits</label><div class="input-prefix"><span>$</span><input type="text" id="calc_month1" placeholder="45,000.00" oninput="calcSpecPct()"></div></div>
+      <div class="field-wrap full"><label>Month 2 Deposits</label><div class="input-prefix"><span>$</span><input type="text" id="calc_month2" placeholder="52,000.00" oninput="calcSpecPct()"></div></div>
+      <div class="field-wrap full"><label>Month 3 Deposits</label><div class="input-prefix"><span>$</span><input type="text" id="calc_month3" placeholder="48,000.00" oninput="calcSpecPct()"></div></div>
+    </div>
+    <div id="calcResult" style="margin-top:16px;padding:12px;border-radius:10px;background:rgba(0,119,255,0.04);border:1px solid var(--border);display:none;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="color:var(--muted);font-size:12px;">Total Deposits (3 months)</span>
+        <span id="calcTotal" style="color:var(--text);font-size:13px;font-weight:600;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span id="calcAvgLabel" style="color:var(--muted);font-size:12px;">Avg Weekly Receipts</span>
+        <span id="calcAvg" style="color:var(--text);font-size:13px;font-weight:600;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span id="calcPaymentLabel" style="color:var(--muted);font-size:12px;">Your Payment Amount</span>
+        <span id="calcPayment" style="color:var(--text);font-size:13px;font-weight:600;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+        <span style="color:var(--accent);font-size:13px;font-weight:600;">Specified Percentage</span>
+        <span id="calcPct" style="color:var(--accent);font-size:16px;font-weight:700;">—</span>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:11px;margin-top:10px;">This is a reference calculation only. You still enter the Specified % manually on the form.</p>
+  </div>
+</div>
+
+<script>
+let currentStep = 0;
+const totalSteps = 5;
+let savedData = null;
+let DEAL_TYPE = 'weekly'; // set by selectDealType() from the landing screen
+let IS_FUNDKEY = false;   // set by selectDealType() — Fundkey entity flag (drives template + branding + disclosure)
+
+// Entity step navigation — first screen of the landing
+function selectEntity(entity) {
+  // entity: 'fundgate' or 'fundkey'
+  document.getElementById('entityStep').style.display = 'none';
+  if (entity === 'fundgate') {
+    document.getElementById('fundgateOptions').style.display = '';
+    document.getElementById('fundkeyOptions').style.display = 'none';
+  } else {
+    document.getElementById('fundkeyOptions').style.display = '';
+    document.getElementById('fundgateOptions').style.display = 'none';
+  }
+}
+function backToEntityStep() {
+  document.getElementById('entityStep').style.display = '';
+  document.getElementById('fundgateOptions').style.display = 'none';
+  document.getElementById('fundkeyOptions').style.display = 'none';
+}
+
+function openCalcModal() {
+  document.getElementById('calcModal').style.display = 'block';
+  calcSpecPct();
+}
+function closeCalcModal() {
+  document.getElementById('calcModal').style.display = 'none';
+}
+function calcSpecPct() {
+  const parse = (id) => { const v = document.getElementById(id).value.replace(/[^0-9.]/g,''); return parseFloat(v) || 0; };
+  const m1 = parse('calc_month1');
+  const m2 = parse('calc_month2');
+  const m3 = parse('calc_month3');
+  const total = m1 + m2 + m3;
+  const resultDiv = document.getElementById('calcResult');
+
+  if (total <= 0) { resultDiv.style.display = 'none'; return; }
+  resultDiv.style.display = 'block';
+
+  const isDaily = DEAL_TYPE === 'daily';
+  // 3 months ≈ 13 weeks or ~66 business days
+  const avgReceipts = isDaily ? (total / 66) : (total / 13);
+  const paymentField = isDaily ? 'Specific_Daily_Amount' : 'Specific_Weekly_Amount';
+  const paymentVal = parseFloat((document.getElementById(paymentField).value || '0').replace(/[^0-9.]/g,'')) || 0;
+
+  const fmt = (n) => '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  document.getElementById('calcTotal').textContent = fmt(total);
+  document.getElementById('calcAvgLabel').textContent = isDaily ? 'Avg Daily Receipts (66 biz days)' : 'Avg Weekly Receipts (13 weeks)';
+  document.getElementById('calcAvg').textContent = fmt(avgReceipts);
+  document.getElementById('calcPaymentLabel').textContent = isDaily ? 'Your Daily Payment Amount' : 'Your Weekly Payment Amount';
+
+  if (paymentVal > 0) {
+    const pct = (paymentVal / avgReceipts) * 100;
+    document.getElementById('calcPayment').textContent = fmt(paymentVal);
+    document.getElementById('calcPct').textContent = pct.toFixed(2) + '%';
+  } else {
+    document.getElementById('calcPayment').textContent = 'Enter on form first';
+    document.getElementById('calcPct').textContent = 'Need payment amount';
+  }
+}
+
+function calcPurchasedAmt() {
+  const pp = parseFloat((document.getElementById('Purchase_Price').value || '0').replace(/[^0-9.]/g,'')) || 0;
+  const factor = parseFloat(document.getElementById('factor_purchased').value) || 0;
+  if (pp > 0 && factor > 0) {
+    const fmt = (n) => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    document.getElementById('Purchased_Amount').value = fmt(pp * factor);
+  }
+}
+
+function calcAddendum() {
+  const pp = parseFloat((document.getElementById('Purchase_Price').value || '0').replace(/[^0-9.]/g,'')) || 0;
+  if (pp <= 0) return;
+  const fmt = (n) => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const pairs = [
+    ['factor_30', 'Repurchase_30_Day_Amount'],
+    ['factor_31_60', 'Repurchase_31_60_Day_Amount'],
+    ['factor_31_45', 'Repurchase_31_45_Day_Amount'],
+    ['factor_46_60', 'Repurchase_46_60_Day_Amount'],
+    ['factor_after_60', 'After_60_Day_Amount'],
+  ];
+  for (const [fid, did] of pairs) {
+    const factor = parseFloat(document.getElementById(fid).value) || 0;
+    if (factor > 0) {
+      document.getElementById(did).value = fmt(pp * factor);
+    }
+  }
+}
+
+function selectDealType(type, isFundkey) {
+  DEAL_TYPE = type;            // 'weekly' or 'daily'
+  IS_FUNDKEY = !!isFundkey;    // Fundkey entity flag — drives template + branding + disclosure
+  const isDaily = type === 'daily';
+  // Hide landing, show form + progress
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('progressWrap').style.display = '';
+  document.getElementById('mainContent').style.display = '';
+  document.getElementById('navRow').style.display = 'flex';
+  // Header subtitle
+  const brand = IS_FUNDKEY ? 'Fundkey · ' : '';
+  document.getElementById('headerSubtitle').textContent =
+    brand + (isDaily ? 'Daily Deal' : 'Weekly Deal') + ' — Contract Generator';
+  // Page title
+  const titleBrand = IS_FUNDKEY ? 'Fundkey' : 'FundGate';
+  document.title = titleBrand + ' — ' + (isDaily ? 'Daily Deal' : 'Weekly Deal');
+  // ACH Frequency field (drives the template label text on page 1 etc.)
+  const freqEl = document.getElementById('ACH_Frequency');
+  if (freqEl) freqEl.value = isDaily ? 'Daily' : 'Weekly';
+  // Show only the relevant amount field + mark it required
+  const wkly = document.getElementById('wrap_weekly_amt');
+  const daly = document.getElementById('wrap_daily_amt');
+  const wklyInput = document.getElementById('Specific_Weekly_Amount');
+  const dalyInput = document.getElementById('Specific_Daily_Amount');
+  if (isDaily) {
+    if (wkly) wkly.style.display = 'none';
+    if (daly) daly.style.display = '';
+    if (wklyInput) wklyInput.removeAttribute('required');
+    if (dalyInput) dalyInput.setAttribute('required', '');
+  } else {
+    if (wkly) wkly.style.display = '';
+    if (daly) daly.style.display = '';
+    if (wklyInput) wklyInput.setAttribute('required', '');
+    if (dalyInput) dalyInput.removeAttribute('required');
+  }
+  // Fundkey path: show Avg Monthly Revenue field (used by CA disclosure).
+  // State is NOT locked to CA — user picks any state. For non-CA states the
+  // revenue field is simply ignored by the disclosure logic.
+  const caWrap = document.getElementById('wrap_ca_avg_rev');
+  if (caWrap) caWrap.style.display = IS_FUNDKEY ? '' : 'none';
+}
+
+function goBackToLanding() {
+  document.getElementById('landingScreen').style.display = '';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('payoffContent').style.display = 'none';
+  document.getElementById('zeroBalanceContent').style.display = 'none';
+  const succ = document.getElementById('successScreen');
+  if (succ) succ.classList.remove('visible');
+  document.getElementById('headerSubtitle').textContent = 'Document Generator';
+  document.title = 'FundGate — Document Generator';
+  IS_FUNDKEY = false;
+  const caWrap = document.getElementById('wrap_ca_avg_rev');
+  if (caWrap) caWrap.style.display = 'none';
+  // Reset landing to entity selection step
+  backToEntityStep();
+}
+
+function showPayoffForm() {
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('payoffContent').style.display = '';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('headerSubtitle').textContent = 'Payoff Letter';
+  document.title = 'FundGate — Payoff Letter';
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('payoff_date');
+  if (dateEl && !dateEl.value) dateEl.value = today;
+}
+
+function showZeroBalanceForm() {
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('zeroBalanceContent').style.display = '';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('headerSubtitle').textContent = 'Zero Balance Letter';
+  document.title = 'FundGate — Zero Balance Letter';
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('zb_date');
+  if (dateEl && !dateEl.value) dateEl.value = today;
+}
+
+async function generateZeroBalance(format, btn) {
+  const errEl = document.getElementById('zbErr');
+  errEl.style.display = 'none';
+  const btns = btn.closest('div').querySelectorAll('button');
+  const origText = btn.textContent;
+  btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+  btn.textContent = '⏳ Generating...';
+  function zfv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function zfmtDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
+  const data = {
+    zb_date: zfmtDate(zfv('zb_date')),
+    zb_merchant: zfv('zb_merchant'),
+  };
+  if (!data.zb_date || !data.zb_merchant) {
+    errEl.textContent = '⚠ Please fill in all fields.';
+    errEl.style.display = 'block';
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    btn.textContent = origText;
+    return;
+  }
+  const url = format === 'pdf' ? '/generate/zerobalance/pdf' : '/generate/zerobalance';
+  try {
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
+    const blob = await resp.blob();
+    const ext = format === 'pdf' ? 'pdf' : 'docx';
+    const name = `FundGate_ZeroBalance_${data.zb_merchant.replace(/\s+/g,'_')}_${data.zb_date.replace(/\//g,'-')}.${ext}`;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+  } catch(e) {
+    errEl.textContent = '⚠ Error: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    btn.textContent = origText;
+  }
+}
+
+async function generatePayoff(format, btn) {
+  const errEl = document.getElementById('payoffErr');
+  errEl.style.display = 'none';
+  const btns = btn.closest('div').querySelectorAll('button');
+  const origText = btn.textContent;
+  btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+  btn.textContent = '⏳ Generating...';
+
+  function pfv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function pfmtDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
+  function pfmtMoney(val) {
+    const n = parseFloat(val.replace(/[^0-9.]/g, ''));
+    if (isNaN(n)) return val;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  const data = {
+    payoff_date: pfmtDate(pfv('payoff_date')),
+    payoff_merchant: pfv('payoff_merchant'),
+    payoff_original_amount: pfv('payoff_original_amount') ? pfmtMoney(pfv('payoff_original_amount')) : '',
+    payoff_balance: pfmtMoney(pfv('payoff_balance')),
+    payoff_wire_amount: pfmtMoney(pfv('payoff_wire_amount')),
+    payoff_discount_warning: document.getElementById('payoff_discount_warning').checked,
+  };
+
+  if (!data.payoff_date || !data.payoff_merchant || !data.payoff_balance || !data.payoff_wire_amount) {
+    errEl.textContent = '⚠ Please fill in all fields.';
+    errEl.style.display = 'block';
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    btn.textContent = origText;
+    return;
+  }
+
+  const url = format === 'pdf' ? '/generate/payoff/pdf' : '/generate/payoff';
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
+    const blob = await resp.blob();
+    const ext = format === 'pdf' ? 'pdf' : 'docx';
+    const name = `FundGate_Payoff_${data.payoff_merchant.replace(/\s+/g,'_')}_${data.payoff_date.replace(/\//g,'-')}.${ext}`;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+  } catch(e) {
+    errEl.textContent = '⚠ Error: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    btn.textContent = origText;
+  }
+}
+
+document.getElementById('includeAddendum').addEventListener('change', function() {
+  document.querySelectorAll('#addendumFields .field-wrap').forEach(f => f.style.opacity = this.checked ? '1' : '0.4');
+});
+
+function toggle4Tier(enabled) {
+    document.getElementById('tier3_block').style.display = enabled ? 'none' : 'block';
+    document.getElementById('tier4_block').style.display = enabled ? 'block' : 'none';
+}
+
+function fv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function formatDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
+
+// Format a number with commas and 2 decimal places
+function fmtPhone(v) {
+  const d = v.replace(/\D/g,'').slice(0,10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return d.slice(0,3)+'-'+d.slice(3);
+  return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);
+}
+
+function fmtMoney(val) {
+  if (!val) return '';
+  const n = parseFloat(val.toString().replace(/[^0-9.]/g, ''));
+  if (isNaN(n)) return val;
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+// Format percentage
+function fmtPct(val) {
+  if (!val) return '';
+  const n = parseFloat(val.toString().replace(/[^0-9.]/g, ''));
+  if (isNaN(n)) return val;
+  return n + '%';
+}
+// Format EIN: XX-XXXXXXX
+function fmtEIN(val) {
+  if (!val) return '';
+  const d = val.replace(/\D/g,'');
+  if (d.length >= 9) return d.slice(0,2) + '-' + d.slice(2,9);
+  if (d.length > 2) return d.slice(0,2) + '-' + d.slice(2);
+  return d;
+}
+// Toggle second signer fields
+function toggleSigner2() {
+  const show = document.getElementById('twoSigners').checked;
+  document.getElementById('signer2Fields').style.display = show ? 'contents' : 'none';
+}
+// Format SSN: XXX-XX-XXXX
+function fmtSSN(val) {
+  if (!val) return '';
+  const d = val.replace(/\D/g,'');
+  if (d.length >= 9) return d.slice(0,3) + '-' + d.slice(3,5) + '-' + d.slice(5,9);
+  if (d.length > 5) return d.slice(0,3) + '-' + d.slice(3,5) + '-' + d.slice(5);
+  if (d.length > 3) return d.slice(0,3) + '-' + d.slice(3);
+  return d;
+}
+
+function navigate(dir) {
+  if (dir === 1 && currentStep === totalSteps - 1) { generate(); return; }
+  const next = currentStep + dir;
+  if (next < 0 || next >= totalSteps) return;
+  document.getElementById('step' + currentStep).classList.remove('visible');
+  currentStep = next;
+  document.getElementById('step' + currentStep).classList.add('visible');
+  if (currentStep === 4) buildReview();
+  updateNav(); updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateNav() {
+  document.getElementById('btnBack').style.display = currentStep > 0 ? 'block' : 'none';
+  const btn = document.getElementById('btnNext');
+  if (currentStep === totalSteps - 1) { btn.textContent = '⚡ Generate Contract'; btn.className = 'btn btn-generate'; }
+  else { btn.textContent = 'Continue →'; btn.className = 'btn btn-next'; }
+}
+
+function updateProgress() {
+  for (let i = 0; i < totalSteps; i++) {
+    document.getElementById('pill'+i).className = 'step-pill'+(i<currentStep?' done':i===currentStep?' active':'');
+    document.getElementById('lbl'+i).className = 'step-label'+(i<currentStep?' done':i===currentStep?' active':'');
+  }
+}
+
+function buildReview() {
+  const d = getData();
+  const addendum = document.getElementById('includeAddendum').checked;
+  const sections = [
+    { title: '🏢 Merchant', items: [['Agreement Date',d.Agreement_Date],['Legal Name',d.Merchant_Legal_Name],['DBA',d.Merchant_DBA],['Entity',d.Entity_Type],['State',d.State_of_Organization],['EIN',d.Federal_EIN],['Address',d.Executive_Office_Address],['Phone',d.Business_Phone]] },
+    { title: '💰 Deal Terms', items: [['Purchase Price','$'+d.Purchase_Price],['Purchased Amount','$'+d.Purchased_Amount],['Specified %',d.Specified_Percentage+'%'],['ACH Freq',d.ACH_Frequency],['Weekly Amt','$'+d.Specific_Weekly_Amount],['Daily Amt','$'+d.Specific_Daily_Amount],['ACH Fee',d.ACH_Program_Fee_Percentage+'%'],['Orig Fee',d.Origination_Fee_Percentage+'%'],['Addendum',addendum?'INCLUDED':'NOT INCLUDED']] },
+    { title: '🏦 Banking', items: [['Bank',d.Bank_Name],['Routing',d.Routing_Number],['Account',d.Account_Number],['Signer',d.Authorized_Signer_Name]] },
+    { title: '✍️ Guarantor', items: [['Merchant #1',d.Merchant_1],['Title',d.Title],['Guarantor',d.Owner_Guarantor_1],['SSN',d.Guarantor_SSN],['DL',d.Guarantor_Driver_License]] },
+  ];
+  if (d.twoSigners) {
+    sections.push({ title: '✍️ Guarantor #2', items: [['Name',d.Owner_Guarantor_2],['Title',d.Title_2],['SSN',d.Guarantor_SSN_2],['DL',d.Guarantor_DL_2]] });
+  }
+  let html = '';
+  sections.forEach(sec => {
+    html += `<div class="review-block"><div class="review-block-title">${sec.title}</div><div class="review-grid">`;
+    sec.items.forEach(([l,v]) => html += `<div class="review-item"><label>${l}</label><div class="val">${v||'<span style="color:#2d3f5a">—</span>'}</div></div>`);
+    html += `</div></div>`;
+  });
+  document.getElementById('reviewContent').innerHTML = html;
+}
+
+function getData() {
+  return {
+    Agreement_Date: formatDate(fv('Agreement_Date')),
+    Merchant_Legal_Name: (fv('Merchant_Legal_Name')||'').toUpperCase(),
+    Merchant_DBA: (fv('Merchant_DBA')||'').toUpperCase(),
+    Entity_Type: (fv('Entity_Type')||'').toUpperCase(),
+    State_of_Organization: (fv('State_of_Organization')||'').toUpperCase(),
+    Executive_Office_Address: (fv('Executive_Office_Address')||'').toUpperCase(),
+    Mailing_Address: (fv('Mailing_Address') || fv('Executive_Office_Address')||'').toUpperCase(),
+    Business_Start_Date: fv('Business_Start_Date'),
+    Federal_EIN: fmtEIN(fv('Federal_EIN')),
+    Business_Phone: fmtPhone(fv('Business_Phone')||''),
+    Purchase_Price: fmtMoney(fv('Purchase_Price')),
+    Purchased_Amount: fmtMoney(fv('Purchased_Amount')),
+    Specified_Percentage: fmtPct(fv('Specified_Percentage')),
+    ACH_Frequency: fv('ACH_Frequency'),
+    dealType: DEAL_TYPE,
+    Specific_Weekly_Amount: fmtMoney(fv('Specific_Weekly_Amount')),
+    Specific_Daily_Amount: fmtMoney(fv('Specific_Daily_Amount')),
+    ACH_Program_Fee_Percentage: fmtPct(fv('ACH_Program_Fee_Percentage')),
+    Origination_Fee_Percentage: fmtPct(fv('Origination_Fee_Percentage')),
+    Repurchase_30_Day_Amount: fmtMoney(fv('Repurchase_30_Day_Amount')),
+    Repurchase_31_60_Day_Amount: fmtMoney(fv('Repurchase_31_60_Day_Amount')),
+    use_4tier_repurchase: document.getElementById('use_4tier_repurchase').checked,
+    Repurchase_31_45_Day_Amount: fmtMoney(fv('Repurchase_31_45_Day_Amount')),
+    Repurchase_46_60_Day_Amount: fmtMoney(fv('Repurchase_46_60_Day_Amount')),
+    After_60_Day_Amount: fmtMoney(fv('After_60_Day_Amount')),
+    Addendum_Date: formatDate(fv('Addendum_Date')),
+    Bank_Name: (fv('Bank_Name')||'').toUpperCase(),
+    Routing_Number: fv('Routing_Number'),
+    Account_Number: fv('Account_Number'),
+    Authorized_Signer_Name: fv('Authorized_Signer_Name'),
+    Signer_Title: fv('Signer_Title') || 'President',
+    Merchant_1: fv('Merchant_1'),
+    Title: fv('Title') || 'Owner',
+    Owner_Guarantor_1: fv('Owner_Guarantor_1'),
+    Guarantor_SSN: fmtSSN(fv('Guarantor_SSN')),
+    Guarantor_Driver_License: fv('Guarantor_Driver_License'),
+    twoSigners: document.getElementById('twoSigners').checked,
+    Owner_Guarantor_2: fv('Owner_Guarantor_2'),
+    Title_2: fv('Title_2') || 'Owner',
+    Guarantor_SSN_2: fmtSSN(fv('Guarantor_SSN_2')),
+    Guarantor_DL_2: fv('Guarantor_DL_2'),
+    includeAddendum: document.getElementById('includeAddendum').checked,
+    // Fundkey route flag (sent to /generate/fundkey when true)
+    isFundkey: IS_FUNDKEY,
+    CA_Avg_Monthly_Revenue: IS_FUNDKEY ? fmtMoney(fv('CA_Avg_Monthly_Revenue')) : '',
+  };
+}
+
+async function generate() {
+  savedData = getData();
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('successScreen').classList.add('visible');
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && window.innerWidth < 1024;
+  const btns = document.getElementById('downloadButtons');
+  if (isMobile) {
+    btns.innerHTML = '<button class="btn-dl btn-dl-pdf" onclick="downloadPdf()">⬇ Download PDF</button>';
+  } else {
+    btns.innerHTML = '<button class="btn-dl btn-dl-docx" onclick="downloadDocx()">⬇ Download Word Contract (.docx)</button><button class="btn-dl btn-dl-pdf" onclick="downloadPdf()">⬇ Download PDF</button>';
+  }
+}
+
+async function downloadPdf() {
+  const overlay = document.getElementById('loadingOverlay');
+  const errEl = document.getElementById('errMsg');
+  overlay.classList.add('visible');
+  errEl.style.display = 'none';
+  try {
+    const isFundkey = !!savedData.isFundkey;
+    const endpoint = isFundkey ? '/generate/fundkey/pdf' : '/generate/pdf';
+    const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(savedData) });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
+    const blob = await resp.blob();
+    const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
+    const state = (savedData.State_of_Organization || '').toUpperCase();
+    const statePart = (isFundkey && state) ? `_${state}` : '';
+    const prefix = isFundkey ? `Fundkey_${deal}${statePart}` : `FundGate_${deal}`;
+    const name = `${prefix}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.pdf`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  } catch(e) {
+    errEl.textContent = '⚠ PDF Error: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    overlay.classList.remove('visible');
+  }
+}
+
+async function downloadDocx() {
+  const overlay = document.getElementById('loadingOverlay');
+  const errEl = document.getElementById('errMsg');
+  overlay.classList.add('visible');
+  errEl.style.display = 'none';
+  try {
+    const isFundkey = !!savedData.isFundkey;
+    const endpoint = isFundkey ? '/generate/fundkey' : '/generate';
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(savedData)
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
+    const blob = await resp.blob();
+    const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
+    const state = (savedData.State_of_Organization || '').toUpperCase();
+    const statePart = (isFundkey && state) ? `_${state}` : '';
+    const prefix = isFundkey ? `Fundkey_${deal}${statePart}` : `FundGate_${deal}`;
+    const name = `${prefix}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.docx`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  } catch(e) {
+    errEl.textContent = '⚠ Error: ' + e.message + '. Make sure the server is running.';
+    errEl.style.display = 'block';
+  } finally {
+    overlay.classList.remove('visible');
+  }
+}
+
+function editDeal() {
+  document.getElementById("successScreen").classList.remove("visible");
+  document.getElementById("mainContent").style.display="block";
+  document.getElementById("navRow").style.display="flex";
+  document.getElementById("progressWrap").style.display="block";
+  // Go back to review step with all data intact
+  currentStep = 4;
+  document.querySelectorAll(".section-card").forEach(c=>c.classList.remove("visible"));
+  document.getElementById("step4").classList.add("visible");
+  buildReview();
+  updateNav(); updateProgress();
+  window.scrollTo({top:0});
+}
+
+function resetForm() {
+  document.querySelectorAll('input,select').forEach(el => { if(el.type==='checkbox') el.checked=true; else el.value=''; });
+  currentStep=0; savedData=null;
+  // Re-set today's dates since we wiped them
+  const today = new Date().toISOString().split('T')[0];
+  const ad = document.getElementById('Agreement_Date'); if (ad) ad.value = today;
+  const add = document.getElementById('Addendum_Date'); if (add) add.value = today;
+  document.querySelectorAll('.section-card').forEach(c=>c.classList.remove('visible'));
+  document.getElementById('step0').classList.add('visible');
+  // Send the user back to the landing screen to pick Daily/Weekly again
+  goBackToLanding();
+  updateNav(); updateProgress();
+  window.scrollTo({top:0});
+}
+
+window.addEventListener('load', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('Agreement_Date').value = today;
+  document.getElementById('Addendum_Date').value = today;
+  // Live SSN formatting
+  ['Guarantor_SSN','Guarantor_SSN_2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() { this.value = fmtSSN(this.value); });
+  });
+});
+</script>
+</body>
+</html>

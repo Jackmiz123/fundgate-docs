@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: fundgate-weekly
+    runtime: docker
+    envVars:
+      - key: PORT
+        value: 8080
