@@ -17,6 +17,8 @@
   .header-text h1{font-family:'DM Serif Display',serif;font-size:18px;color:#fff;}
   .header-text p{font-size:11px;color:rgba(255,255,255,.6);letter-spacing:.05em;text-transform:uppercase;}
   .progress-wrap{max-width:680px;margin:0 auto;padding:14px 20px 0;}
+  .form-back-bar{max-width:680px;margin:14px auto 0;padding:0 20px;}
+  .form-back-bar .back-link{margin-bottom:0;}
   .progress-steps{display:flex;gap:4px;}
   .step-pill{flex:1;height:4px;border-radius:4px;background:var(--border);transition:background .4s;}
   .step-pill.active{background:var(--accent);}
@@ -305,6 +307,13 @@ select{text-transform:uppercase;}
       <a href="#" onclick="goBackToLanding();return false;" style="color:var(--muted);font-size:12px;text-decoration:underline;">← Back to menu</a>
     </div>
   </div>
+</div>
+
+<!-- Form-back bar: visible only inside the contract/payoff/zerobalance form.
+     Returns user to the document type selector for their current entity,
+     preserving entity choice and form field values. -->
+<div class="form-back-bar" id="formBackBar" style="display:none;">
+  <button class="back-link" onclick="backToDocumentType()">← Change document type</button>
 </div>
 
 <div class="progress-wrap" id="progressWrap" style="display:none;">
@@ -628,6 +637,7 @@ function selectDealType(type, isFundkey) {
   document.getElementById('progressWrap').style.display = '';
   document.getElementById('mainContent').style.display = '';
   document.getElementById('navRow').style.display = 'flex';
+  document.getElementById('formBackBar').style.display = '';
   // Header subtitle
   const brand = IS_FUNDKEY ? 'Fundkey · ' : '';
   document.getElementById('headerSubtitle').textContent =
@@ -667,6 +677,8 @@ function goBackToLanding() {
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('payoffContent').style.display = 'none';
   document.getElementById('zeroBalanceContent').style.display = 'none';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('formBackBar').style.display = 'none';
   const succ = document.getElementById('successScreen');
   if (succ) succ.classList.remove('visible');
   const t = document.getElementById('headerTitle');
@@ -680,10 +692,42 @@ function goBackToLanding() {
   backToEntityStep();
 }
 
+// Back from form -> document type selection for the current entity.
+// Preserves IS_FUNDKEY and all form field values (DOM input values persist
+// because we only hide the elements; we never clear them).
+function backToDocumentType() {
+  // Hide all form-context UI
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('payoffContent').style.display = 'none';
+  document.getElementById('zeroBalanceContent').style.display = 'none';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('formBackBar').style.display = 'none';
+  const succ = document.getElementById('successScreen');
+  if (succ) succ.classList.remove('visible');
+  // Show landing with the right entity's options (skip the entity-step)
+  document.getElementById('landingScreen').style.display = '';
+  document.getElementById('entityStep').style.display = 'none';
+  if (IS_FUNDKEY) {
+    document.getElementById('fundkeyOptions').style.display = '';
+    document.getElementById('fundgateOptions').style.display = 'none';
+  } else {
+    document.getElementById('fundgateOptions').style.display = '';
+    document.getElementById('fundkeyOptions').style.display = 'none';
+  }
+  // Update header to reflect the entity context (kept, not reset)
+  const titleEl = document.getElementById('headerTitle');
+  const subEl   = document.getElementById('headerSubtitle');
+  if (titleEl) titleEl.textContent = IS_FUNDKEY ? 'Fundkey LLC' : 'FundGate LLC';
+  if (subEl)   subEl.textContent   = 'Choose a document';
+  window.scrollTo({top: 0});
+}
+
 function showPayoffForm() {
   document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('payoffContent').style.display = '';
   document.getElementById('navRow').style.display = 'none';
+  document.getElementById('formBackBar').style.display = '';
   document.getElementById('headerSubtitle').textContent = 'Payoff Letter';
   document.title = 'FundGate — Payoff Letter';
   const today = new Date().toISOString().split('T')[0];
@@ -695,6 +739,7 @@ function showZeroBalanceForm() {
   document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('zeroBalanceContent').style.display = '';
   document.getElementById('navRow').style.display = 'none';
+  document.getElementById('formBackBar').style.display = '';
   document.getElementById('headerSubtitle').textContent = 'Zero Balance Letter';
   document.title = 'FundGate — Zero Balance Letter';
   const today = new Date().toISOString().split('T')[0];
