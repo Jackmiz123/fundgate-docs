@@ -255,9 +255,8 @@ def build_ca_disclosure_bytes(data):
         spec_pct = 0.0
 
     avg_monthly_rev = _n(data, 'CA_Avg_Monthly_Revenue')
-    if avg_monthly_rev <= 0:
-        # Required for CA disclosure
-        return None
+    # Disclosure always renders, even on a blank doc. Missing/zero values
+    # simply produce zeros in the relevant cells.
 
     ach_freq = (data.get('ACH_Frequency', 'weekly') or 'weekly').lower()
     is_weekly = 'week' in ach_freq
@@ -270,12 +269,9 @@ def build_ca_disclosure_bytes(data):
         period_label = 'business day'
         period_label_cap = 'Daily'
 
-    if pp <= 0 or pa <= 0 or pmt <= 0:
-        return None
-
-    # Calculations
-    apr = _calculate_apr(pp, pmt, ach_freq, pa)
-    n_payments = int(round(pa / pmt))
+    # Calculations — all guarded against zero inputs
+    apr = _calculate_apr(pp, pmt, ach_freq, pa) if (pp > 0 and pa > 0 and pmt > 0) else 0.0
+    n_payments = int(round(pa / pmt)) if pmt > 0 else 0
     # Estimated monthly cost: weekly × 52/12 OR daily × 252/12 (252 biz days/yr)
     if is_weekly:
         est_monthly = round(pmt * 52 / 12, 2)
@@ -283,10 +279,12 @@ def build_ca_disclosure_bytes(data):
         est_monthly = round(pmt * 252 / 12, 2)
     # Estimated term (months): total / (revenue × specified%)
     monthly_capture = avg_monthly_rev * spec_pct / 100.0
-    if monthly_capture > 0:
+    if monthly_capture > 0 and pa > 0:
         est_term_months = max(1, int(round(pa / monthly_capture + 0.0001)))
-    else:
+    elif pmt > 0 and pa > 0:
         est_term_months = max(1, int(round(n_payments / (52/12) if is_weekly else n_payments / 21)))
+    else:
+        est_term_months = 0
 
     two_signers = bool(data.get('twoSigners', False))
     signer1_name = (data.get('Owner_Guarantor_1', '') or '').upper()

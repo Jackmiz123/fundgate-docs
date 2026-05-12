@@ -103,11 +103,10 @@ def merge_disclosure_into_contract(contract_bytes, disclosure_bytes):
 
 def fill_docx(data):
     is_daily = data.get('dealType') == 'daily'
-    # CA-only flag — when True, use Fundkey-branded templates instead of FundGate.
-    # All existing (non-CA) routes leave isCA absent, so this is a pure addition
-    # and does not affect the FundGate Weekly/Daily/Payoff/ZeroBalance flows.
-    is_ca = bool(data.get('isCA', False))
-    if is_ca:
+    # Fundkey flag — when True, use Fundkey-branded templates instead of
+    # FundGate. Legacy 'isCA' is accepted as an alias for backwards compat.
+    is_fundkey = bool(data.get('isFundkey', False) or data.get('isCA', False))
+    if is_fundkey:
         template = TEMPLATE_DAILY_CA if is_daily else TEMPLATE_WEEKLY_CA
     else:
         template = TEMPLATE_DAILY if is_daily else TEMPLATE_WEEKLY
@@ -235,9 +234,9 @@ def fill_docx(data):
         + consumer_notice
     )
 
-    # ── CA-only: swap the FundGate email line in the consumer notice ─────────
+    # ── Fundkey-only: swap the FundGate email line in the consumer notice ────
     # Fundkey email = admin@fundkey.com
-    if is_ca:
+    if is_fundkey:
         doc = doc.replace(
             '<w:t>Email: admin@fundgatellc.com</w:t>',
             '<w:t>Email: admin@fundkey.com</w:t>'
@@ -498,11 +497,17 @@ def safe_filename(data, ext):
     return f"FundGate_{deal}_{dba}_{date}.{ext}"
 
 def safe_filename_ca(data, ext):
-    """CA-only filename prefix — Fundkey LLC entity."""
+    """Legacy alias retained for any internal callers — same as Fundkey filename."""
+    return safe_filename_fundkey(data, ext)
+
+def safe_filename_fundkey(data, ext):
+    """Fundkey entity filename. State included so Jack can scan by state."""
     deal = data.get('dealType', 'weekly').capitalize()
+    state = (data.get('State_of_Organization') or '').upper().strip()
+    state_part = f'_{state}' if state else ''
     dba  = re.sub(r'\s+', '_', data.get('Merchant_DBA') or data.get('Merchant_Legal_Name','Contract'))
     date = (data.get('Agreement_Date','') or '').replace('/','_')
-    return f"Fundkey_CA{deal}_{dba}_{date}.{ext}"
+    return f"Fundkey_{deal}{state_part}_{dba}_{date}.{ext}"
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
@@ -553,28 +558,42 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin','*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
-        elif self.path in ('/generate/ca', '/generate/ca/pdf'):
-            # CA-only route — uses Fundkey-branded templates + 3-page CA disclosure.
-            # Existing FundGate routes are untouched.
+        elif self.path in ('/generate/fundkey', '/generate/fundkey/pdf',
+                            '/generate/ca', '/generate/ca/pdf'):
+            # Fundkey-route — uses Fundkey-branded templates. State of
+            # Organization is honored from the form (CA, FL, GA, etc.).
+            # Disclosure rendering:
+            #   - state = CA            -> CA disclosure (Fundkey-branded)
+            #   - state in FL/GA/LA/... -> state disclosure (Fundkey-branded)
+            #   - other states          -> no disclosure (same as FundGate)
+            # The legacy /generate/ca paths are kept as aliases so existing
+            # bookmarks still work.
             want_pdf = self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(length))
             try:
-                # Force flags so fill_docx picks Fundkey templates and blanks email.
-                data['isCA'] = True
-                data['State_of_Organization'] = 'CA'
+                # Flag the request as a Fundkey deal — drives template
+                # selection in fill_docx AND provider branding in
+                # build_disclosure_bytes.
+                data['isFundkey'] = True
+                data['isCA'] = True  # legacy alias used by fill_docx
                 docx_bytes = fill_docx(data)
-                disc_bytes = build_ca_disclosure_bytes(data)
+                # Pick disclosure by state
+                state = (data.get('State_of_Organization') or '').upper().strip()
+                if state == 'CA':
+                    disc_bytes = build_ca_disclosure_bytes(data)
+                else:
+                    disc_bytes = build_disclosure_bytes(data)
                 if disc_bytes:
                     docx_bytes = merge_disclosure_into_contract(docx_bytes, disc_bytes)
                 if want_pdf:
                     out_bytes = docx_to_pdf(docx_bytes)
                     mime      = 'application/pdf'
-                    fname     = safe_filename_ca(data, 'pdf')
+                    fname     = safe_filename_fundkey(data, 'pdf')
                 else:
                     out_bytes = docx_bytes
                     mime      = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    fname     = safe_filename_ca(data, 'docx')
+                    fname     = safe_filename_fundkey(data, 'docx')
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
                 self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')

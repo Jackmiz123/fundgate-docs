@@ -155,6 +155,14 @@ def build_disclosure_bytes(data):
     if not cfg:
         return None
 
+    # Fundkey-aware branding. Default is FundGate (existing behavior unchanged).
+    # When isFundkey is True, this disclosure was requested by the Fundkey
+    # route — swap provider Name/Email so the disclosure is consistent with
+    # the Fundkey-branded contract it'll be merged into.
+    is_fundkey    = bool(data.get('isFundkey', False)) or bool(data.get('isCA', False))
+    provider_name  = 'Fundkey LLC' if is_fundkey else 'FundGate LLC'
+    provider_email = 'admin@fundkey.com' if is_fundkey else 'admin@fundgatellc.com'
+
     two_signers   = data.get('twoSigners', False)
     merchant_name = (data.get('Merchant_Legal_Name', '') or '').upper()
     merchant_dba  = (data.get('Merchant_DBA', '') or merchant_name).upper()
@@ -219,10 +227,10 @@ def build_disclosure_bytes(data):
     ]
     right_cell_paras = [
         _para([_run('Provider', bold=True)], after=40),
-        _para([_run('Name: FundGate LLC', bold=True)], after=40),
+        _para([_run(f'Name: {provider_name}', bold=True)], after=40),
         _para([_run('Address: 1202 Avenue U, Suite 1175, Brooklyn NY 11229', bold=True)], after=40),
         _para([_run('Phone Number: 929-256-7464', bold=True)], after=40),
-        _para([_run('E-mail Address: admin@fundgatellc.com', bold=True)], after=40),
+        _para([_run(f'E-mail Address: {provider_email}', bold=True)], after=40),
     ]
     desc_para = _para(
         [_run(f'This Commercial Financing Disclosure is being provided to the Recipient ("you") by the '

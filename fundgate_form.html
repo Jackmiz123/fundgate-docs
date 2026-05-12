@@ -122,39 +122,70 @@ select{text-transform:uppercase;}
 
 <!-- LANDING SELECTOR — shown first, lets the user pick Daily vs Weekly -->
 <div class="landing" id="landingScreen">
-  <h2>Choose Document Type</h2>
-  <p>Select what you need to generate.</p>
-  <div class="landing-buttons">
-    <button class="landing-btn" onclick="selectDealType('weekly')">
-      <div class="lb-icon">📅</div>
-      <div class="lb-title">Weekly Contract</div>
-      <div class="lb-sub">Debits once per week</div>
-    </button>
-    <button class="landing-btn" onclick="selectDealType('daily')">
-      <div class="lb-icon">🗓️</div>
-      <div class="lb-title">Daily Contract</div>
-      <div class="lb-sub">Debits every business day</div>
-    </button>
-    <button class="landing-btn" onclick="showPayoffForm()">
-      <div class="lb-icon">💲</div>
-      <div class="lb-title">Payoff Letter</div>
-      <div class="lb-sub">Balance & wire details</div>
-    </button>
-    <button class="landing-btn" onclick="showZeroBalanceForm()">
-      <div class="lb-icon">📄</div>
-      <div class="lb-title">Zero Balance</div>
-      <div class="lb-sub">Account paid in full</div>
-    </button>
-    <button class="landing-btn" onclick="selectDealType('weekly', true)" style="border-color:#1a3fa0;">
-      <div class="lb-icon">🔒</div>
-      <div class="lb-title">CA Weekly</div>
-      <div class="lb-sub">Fundkey · Weekly debits</div>
-    </button>
-    <button class="landing-btn" onclick="selectDealType('daily', true)" style="border-color:#1a3fa0;">
-      <div class="lb-icon">🔒</div>
-      <div class="lb-title">CA Daily</div>
-      <div class="lb-sub">Fundkey · Daily debits</div>
-    </button>
+  <!-- STEP 1: Entity selection -->
+  <div id="entityStep">
+    <h2>Choose Entity</h2>
+    <p>Which company is this deal under?</p>
+    <div class="landing-buttons">
+      <button class="landing-btn" onclick="selectEntity('fundgate')">
+        <div class="lb-icon" style="font-family:'DM Serif Display',serif;color:var(--accent);">FG</div>
+        <div class="lb-title">FundGate LLC</div>
+        <div class="lb-sub">Standard funding entity</div>
+      </button>
+      <button class="landing-btn" onclick="selectEntity('fundkey')" style="border-color:#1a3fa0;">
+        <div class="lb-icon">🔒</div>
+        <div class="lb-title">Fundkey LLC</div>
+        <div class="lb-sub">CA & multi-state funding</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2A: FundGate options (unchanged from prior versions) -->
+  <div id="fundgateOptions" style="display:none;">
+    <button class="back-link" onclick="backToEntityStep()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;margin-bottom:8px;padding:0;">← Back to entity selection</button>
+    <h2>FundGate LLC — Choose Document</h2>
+    <p>Select what you need to generate.</p>
+    <div class="landing-buttons">
+      <button class="landing-btn" onclick="selectDealType('weekly')">
+        <div class="lb-icon">📅</div>
+        <div class="lb-title">Weekly Contract</div>
+        <div class="lb-sub">Debits once per week</div>
+      </button>
+      <button class="landing-btn" onclick="selectDealType('daily')">
+        <div class="lb-icon">🗓️</div>
+        <div class="lb-title">Daily Contract</div>
+        <div class="lb-sub">Debits every business day</div>
+      </button>
+      <button class="landing-btn" onclick="showPayoffForm()">
+        <div class="lb-icon">💲</div>
+        <div class="lb-title">Payoff Letter</div>
+        <div class="lb-sub">Balance & wire details</div>
+      </button>
+      <button class="landing-btn" onclick="showZeroBalanceForm()">
+        <div class="lb-icon">📄</div>
+        <div class="lb-title">Zero Balance</div>
+        <div class="lb-sub">Account paid in full</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2B: Fundkey options -->
+  <div id="fundkeyOptions" style="display:none;">
+    <button class="back-link" onclick="backToEntityStep()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;margin-bottom:8px;padding:0;">← Back to entity selection</button>
+    <h2>Fundkey LLC — Choose Document</h2>
+    <p>All states supported. CA deals include the SB 1235 disclosure.</p>
+    <div class="landing-buttons">
+      <button class="landing-btn" onclick="selectDealType('weekly', true)" style="border-color:#1a3fa0;">
+        <div class="lb-icon">📅</div>
+        <div class="lb-title">Weekly Contract</div>
+        <div class="lb-sub">Fundkey · Debits once per week</div>
+      </button>
+      <button class="landing-btn" onclick="selectDealType('daily', true)" style="border-color:#1a3fa0;">
+        <div class="lb-icon">🗓️</div>
+        <div class="lb-title">Daily Contract</div>
+        <div class="lb-sub">Fundkey · Debits every business day</div>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -287,7 +318,7 @@ select{text-transform:uppercase;}
       </div>
       <div id="addendumFields" style="display:contents">
         <div class="field-wrap"><label>Addendum Date</label><input type="date" id="Addendum_Date"></div>
-        <div style="padding:10px;border:1px solid var(--border);border-radius:10px;background:rgba(0,119,255,0.03);margin-bottom:10px;">
+        <div style="padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card);margin-bottom:10px;">
           <p style="color:var(--muted);font-size:11px;margin:0 0 8px;">Enter a factor rate (e.g. 1.20) and the repurchase amount auto-calculates from Purchase Price. Or type the dollar amount directly.</p>
           <div style="display:flex;gap:8px;align-items:flex-end;">
             <div class="field-wrap" style="flex:1;margin:0;"><label>0–30 Days Factor</label><input type="text" id="factor_30" placeholder="1.20" oninput="calcAddendum()"></div>
@@ -434,7 +465,25 @@ let currentStep = 0;
 const totalSteps = 5;
 let savedData = null;
 let DEAL_TYPE = 'weekly'; // set by selectDealType() from the landing screen
-let IS_CA = false;        // set by selectDealType() — CA route flag (Fundkey LLC)
+let IS_FUNDKEY = false;   // set by selectDealType() — Fundkey entity flag (drives template + branding + disclosure)
+
+// Entity step navigation — first screen of the landing
+function selectEntity(entity) {
+  // entity: 'fundgate' or 'fundkey'
+  document.getElementById('entityStep').style.display = 'none';
+  if (entity === 'fundgate') {
+    document.getElementById('fundgateOptions').style.display = '';
+    document.getElementById('fundkeyOptions').style.display = 'none';
+  } else {
+    document.getElementById('fundkeyOptions').style.display = '';
+    document.getElementById('fundgateOptions').style.display = 'none';
+  }
+}
+function backToEntityStep() {
+  document.getElementById('entityStep').style.display = '';
+  document.getElementById('fundgateOptions').style.display = 'none';
+  document.getElementById('fundkeyOptions').style.display = 'none';
+}
 
 function openCalcModal() {
   document.getElementById('calcModal').style.display = 'block';
@@ -505,9 +554,9 @@ function calcAddendum() {
   }
 }
 
-function selectDealType(type, isCA) {
-  DEAL_TYPE = type; // 'weekly' or 'daily'
-  IS_CA = !!isCA;   // CA mode flag — drives /generate/ca routing + Fundkey branding
+function selectDealType(type, isFundkey) {
+  DEAL_TYPE = type;            // 'weekly' or 'daily'
+  IS_FUNDKEY = !!isFundkey;    // Fundkey entity flag — drives template + branding + disclosure
   const isDaily = type === 'daily';
   // Hide landing, show form + progress
   document.getElementById('landingScreen').style.display = 'none';
@@ -515,11 +564,11 @@ function selectDealType(type, isCA) {
   document.getElementById('mainContent').style.display = '';
   document.getElementById('navRow').style.display = 'flex';
   // Header subtitle
-  const brand = IS_CA ? 'Fundkey · CA ' : '';
+  const brand = IS_FUNDKEY ? 'Fundkey · ' : '';
   document.getElementById('headerSubtitle').textContent =
     brand + (isDaily ? 'Daily Deal' : 'Weekly Deal') + ' — Contract Generator';
   // Page title
-  const titleBrand = IS_CA ? 'Fundkey CA' : 'FundGate';
+  const titleBrand = IS_FUNDKEY ? 'Fundkey' : 'FundGate';
   document.title = titleBrand + ' — ' + (isDaily ? 'Daily Deal' : 'Weekly Deal');
   // ACH Frequency field (drives the template label text on page 1 etc.)
   const freqEl = document.getElementById('ACH_Frequency');
@@ -540,14 +589,11 @@ function selectDealType(type, isCA) {
     if (wklyInput) wklyInput.setAttribute('required', '');
     if (dalyInput) dalyInput.removeAttribute('required');
   }
-  // CA-only: show the Avg Monthly Revenue field (required for the disclosure
-  // historical method) and lock state to CA on the form.
+  // Fundkey path: show Avg Monthly Revenue field (used by CA disclosure).
+  // State is NOT locked to CA — user picks any state. For non-CA states the
+  // revenue field is simply ignored by the disclosure logic.
   const caWrap = document.getElementById('wrap_ca_avg_rev');
-  if (caWrap) caWrap.style.display = IS_CA ? '' : 'none';
-  if (IS_CA) {
-    const stateEl = document.getElementById('State_of_Organization');
-    if (stateEl) { stateEl.value = 'CA'; }
-  }
+  if (caWrap) caWrap.style.display = IS_FUNDKEY ? '' : 'none';
 }
 
 function goBackToLanding() {
@@ -560,9 +606,11 @@ function goBackToLanding() {
   if (succ) succ.classList.remove('visible');
   document.getElementById('headerSubtitle').textContent = 'Document Generator';
   document.title = 'FundGate — Document Generator';
-  IS_CA = false;
+  IS_FUNDKEY = false;
   const caWrap = document.getElementById('wrap_ca_avg_rev');
   if (caWrap) caWrap.style.display = 'none';
+  // Reset landing to entity selection step
+  backToEntityStep();
 }
 
 function showPayoffForm() {
@@ -831,9 +879,9 @@ function getData() {
     Guarantor_SSN_2: fmtSSN(fv('Guarantor_SSN_2')),
     Guarantor_DL_2: fv('Guarantor_DL_2'),
     includeAddendum: document.getElementById('includeAddendum').checked,
-    // CA-only fields (ignored on non-CA routes)
-    isCA: IS_CA,
-    CA_Avg_Monthly_Revenue: IS_CA ? fmtMoney(fv('CA_Avg_Monthly_Revenue')) : '',
+    // Fundkey route flag (sent to /generate/fundkey when true)
+    isFundkey: IS_FUNDKEY,
+    CA_Avg_Monthly_Revenue: IS_FUNDKEY ? fmtMoney(fv('CA_Avg_Monthly_Revenue')) : '',
   };
 }
 
@@ -858,13 +906,15 @@ async function downloadPdf() {
   overlay.classList.add('visible');
   errEl.style.display = 'none';
   try {
-    const isCA = !!savedData.isCA;
-    const endpoint = isCA ? '/generate/ca/pdf' : '/generate/pdf';
+    const isFundkey = !!savedData.isFundkey;
+    const endpoint = isFundkey ? '/generate/fundkey/pdf' : '/generate/pdf';
     const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(savedData) });
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
     const blob = await resp.blob();
     const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
-    const prefix = isCA ? `Fundkey_CA${deal}` : `FundGate_${deal}`;
+    const state = (savedData.State_of_Organization || '').toUpperCase();
+    const statePart = (isFundkey && state) ? `_${state}` : '';
+    const prefix = isFundkey ? `Fundkey_${deal}${statePart}` : `FundGate_${deal}`;
     const name = `${prefix}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.pdf`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = name;
@@ -884,8 +934,8 @@ async function downloadDocx() {
   overlay.classList.add('visible');
   errEl.style.display = 'none';
   try {
-    const isCA = !!savedData.isCA;
-    const endpoint = isCA ? '/generate/ca' : '/generate';
+    const isFundkey = !!savedData.isFundkey;
+    const endpoint = isFundkey ? '/generate/fundkey' : '/generate';
     const resp = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -894,7 +944,9 @@ async function downloadDocx() {
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
     const blob = await resp.blob();
     const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
-    const prefix = isCA ? `Fundkey_CA${deal}` : `FundGate_${deal}`;
+    const state = (savedData.State_of_Organization || '').toUpperCase();
+    const statePart = (isFundkey && state) ? `_${state}` : '';
+    const prefix = isFundkey ? `Fundkey_${deal}${statePart}` : `FundGate_${deal}`;
     const name = `${prefix}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.docx`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
