@@ -145,6 +145,16 @@ select{text-transform:uppercase;}
       <div class="lb-title">Zero Balance</div>
       <div class="lb-sub">Account paid in full</div>
     </button>
+    <button class="landing-btn" onclick="selectDealType('weekly', true)" style="border-color:#1a3fa0;">
+      <div class="lb-icon">🔒</div>
+      <div class="lb-title">CA Weekly</div>
+      <div class="lb-sub">Fundkey · Weekly debits</div>
+    </button>
+    <button class="landing-btn" onclick="selectDealType('daily', true)" style="border-color:#1a3fa0;">
+      <div class="lb-icon">🔒</div>
+      <div class="lb-title">CA Daily</div>
+      <div class="lb-sub">Fundkey · Daily debits</div>
+    </button>
   </div>
 </div>
 
@@ -265,6 +275,7 @@ select{text-transform:uppercase;}
       <div class="field-wrap"><label>ACH Frequency</label><input type="text" id="ACH_Frequency" value="Weekly" readonly style="background:rgba(255,255,255,0.05);color:var(--text-muted);cursor:not-allowed;"></div>
       <div class="field-wrap" id="wrap_weekly_amt"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00"></div></div>
       <div class="field-wrap" id="wrap_daily_amt"><label>Specific Daily Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
+      <div class="field-wrap full" id="wrap_ca_avg_rev" style="display:none;"><label>Avg Monthly Revenue (CA Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="CA_Avg_Monthly_Revenue" placeholder="120,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives Estimated Term on the disclosure.</div></div>
       <hr class="section-divider">
       <div class="section-label">Appendix A — Fees</div>
       <div class="field-wrap"><label>ACH Program Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="ACH_Program_Fee_Percentage" placeholder="2.5"></div></div>
@@ -423,6 +434,7 @@ let currentStep = 0;
 const totalSteps = 5;
 let savedData = null;
 let DEAL_TYPE = 'weekly'; // set by selectDealType() from the landing screen
+let IS_CA = false;        // set by selectDealType() — CA route flag (Fundkey LLC)
 
 function openCalcModal() {
   document.getElementById('calcModal').style.display = 'block';
@@ -493,8 +505,9 @@ function calcAddendum() {
   }
 }
 
-function selectDealType(type) {
+function selectDealType(type, isCA) {
   DEAL_TYPE = type; // 'weekly' or 'daily'
+  IS_CA = !!isCA;   // CA mode flag — drives /generate/ca routing + Fundkey branding
   const isDaily = type === 'daily';
   // Hide landing, show form + progress
   document.getElementById('landingScreen').style.display = 'none';
@@ -502,10 +515,12 @@ function selectDealType(type) {
   document.getElementById('mainContent').style.display = '';
   document.getElementById('navRow').style.display = 'flex';
   // Header subtitle
+  const brand = IS_CA ? 'Fundkey · CA ' : '';
   document.getElementById('headerSubtitle').textContent =
-    (isDaily ? 'Daily Deal' : 'Weekly Deal') + ' — Contract Generator';
+    brand + (isDaily ? 'Daily Deal' : 'Weekly Deal') + ' — Contract Generator';
   // Page title
-  document.title = 'FundGate — ' + (isDaily ? 'Daily Deal' : 'Weekly Deal');
+  const titleBrand = IS_CA ? 'Fundkey CA' : 'FundGate';
+  document.title = titleBrand + ' — ' + (isDaily ? 'Daily Deal' : 'Weekly Deal');
   // ACH Frequency field (drives the template label text on page 1 etc.)
   const freqEl = document.getElementById('ACH_Frequency');
   if (freqEl) freqEl.value = isDaily ? 'Daily' : 'Weekly';
@@ -525,6 +540,14 @@ function selectDealType(type) {
     if (wklyInput) wklyInput.setAttribute('required', '');
     if (dalyInput) dalyInput.removeAttribute('required');
   }
+  // CA-only: show the Avg Monthly Revenue field (required for the disclosure
+  // historical method) and lock state to CA on the form.
+  const caWrap = document.getElementById('wrap_ca_avg_rev');
+  if (caWrap) caWrap.style.display = IS_CA ? '' : 'none';
+  if (IS_CA) {
+    const stateEl = document.getElementById('State_of_Organization');
+    if (stateEl) { stateEl.value = 'CA'; }
+  }
 }
 
 function goBackToLanding() {
@@ -537,6 +560,9 @@ function goBackToLanding() {
   if (succ) succ.classList.remove('visible');
   document.getElementById('headerSubtitle').textContent = 'Document Generator';
   document.title = 'FundGate — Document Generator';
+  IS_CA = false;
+  const caWrap = document.getElementById('wrap_ca_avg_rev');
+  if (caWrap) caWrap.style.display = 'none';
 }
 
 function showPayoffForm() {
@@ -805,6 +831,9 @@ function getData() {
     Guarantor_SSN_2: fmtSSN(fv('Guarantor_SSN_2')),
     Guarantor_DL_2: fv('Guarantor_DL_2'),
     includeAddendum: document.getElementById('includeAddendum').checked,
+    // CA-only fields (ignored on non-CA routes)
+    isCA: IS_CA,
+    CA_Avg_Monthly_Revenue: IS_CA ? fmtMoney(fv('CA_Avg_Monthly_Revenue')) : '',
   };
 }
 
@@ -829,11 +858,14 @@ async function downloadPdf() {
   overlay.classList.add('visible');
   errEl.style.display = 'none';
   try {
-    const resp = await fetch('/generate/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(savedData) });
+    const isCA = !!savedData.isCA;
+    const endpoint = isCA ? '/generate/ca/pdf' : '/generate/pdf';
+    const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(savedData) });
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
     const blob = await resp.blob();
     const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
-    const name = `FundGate_${deal}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.pdf`;
+    const prefix = isCA ? `Fundkey_CA${deal}` : `FundGate_${deal}`;
+    const name = `${prefix}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.pdf`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = name;
     document.body.appendChild(a); a.click();
@@ -852,7 +884,9 @@ async function downloadDocx() {
   overlay.classList.add('visible');
   errEl.style.display = 'none';
   try {
-    const resp = await fetch('/generate', {
+    const isCA = !!savedData.isCA;
+    const endpoint = isCA ? '/generate/ca' : '/generate';
+    const resp = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(savedData)
@@ -860,7 +894,8 @@ async function downloadDocx() {
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
     const blob = await resp.blob();
     const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
-    const name = `FundGate_${deal}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.docx`;
+    const prefix = isCA ? `Fundkey_CA${deal}` : `FundGate_${deal}`;
+    const name = `${prefix}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.docx`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = name;

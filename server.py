@@ -5,9 +5,13 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from disclosure_module import build_disclosure_bytes
 from payoff_module import build_payoff_letter
 from zero_balance_module import build_zero_balance_letter
+from ca_disclosure_module import build_ca_disclosure_bytes
 
 TEMPLATE_WEEKLY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_WEEKLY.docx')
 TEMPLATE_DAILY  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_DAILY.docx')
+# CA-only templates (Fundkey LLC branding) — used ONLY by /generate/ca routes
+TEMPLATE_WEEKLY_CA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDKEY_TEMPLATE_WEEKLY.docx')
+TEMPLATE_DAILY_CA  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDKEY_TEMPLATE_DAILY.docx')
 FORM            = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fundgate_form.html')
 
 SIGNER2_BLOCKS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -99,7 +103,14 @@ def merge_disclosure_into_contract(contract_bytes, disclosure_bytes):
 
 def fill_docx(data):
     is_daily = data.get('dealType') == 'daily'
-    template = TEMPLATE_DAILY if is_daily else TEMPLATE_WEEKLY
+    # CA-only flag — when True, use Fundkey-branded templates instead of FundGate.
+    # All existing (non-CA) routes leave isCA absent, so this is a pure addition
+    # and does not affect the FundGate Weekly/Daily/Payoff/ZeroBalance flows.
+    is_ca = bool(data.get('isCA', False))
+    if is_ca:
+        template = TEMPLATE_DAILY_CA if is_daily else TEMPLATE_WEEKLY_CA
+    else:
+        template = TEMPLATE_DAILY if is_daily else TEMPLATE_WEEKLY
     with zipfile.ZipFile(template, 'r') as z:
         names = z.namelist()
         files = {n: z.read(n) for n in names}
@@ -223,6 +234,14 @@ def fill_docx(data):
         '<w:r><w:br w:type="page"/></w:r></w:p>\n'
         + consumer_notice
     )
+
+    # ── CA-only: swap the FundGate email line in the consumer notice ─────────
+    # Fundkey email = admin@fundkey.com
+    if is_ca:
+        doc = doc.replace(
+            '<w:t>Email: admin@fundgatellc.com</w:t>',
+            '<w:t>Email: admin@fundkey.com</w:t>'
+        )
 
     # ── Repurchase mid-block (3-tier vs 4-tier) ────────────────────────────
     # Build paragraphs that mirror the template's "If within thirty (30)..." styling:
@@ -478,6 +497,13 @@ def safe_filename(data, ext):
     date = (data.get('Agreement_Date','') or '').replace('/','_')
     return f"FundGate_{deal}_{dba}_{date}.{ext}"
 
+def safe_filename_ca(data, ext):
+    """CA-only filename prefix — Fundkey LLC entity."""
+    deal = data.get('dealType', 'weekly').capitalize()
+    dba  = re.sub(r'\s+', '_', data.get('Merchant_DBA') or data.get('Merchant_Legal_Name','Contract'))
+    date = (data.get('Agreement_Date','') or '').replace('/','_')
+    return f"Fundkey_CA{deal}_{dba}_{date}.{ext}"
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
 
@@ -514,6 +540,41 @@ class Handler(BaseHTTPRequestHandler):
                     out_bytes = docx_bytes
                     mime      = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                     fname     = safe_filename(data, 'docx')
+                self.send_response(200)
+                self.send_header('Content-Type', mime)
+                self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')
+                self.send_header('Content-Length', str(len(out_bytes)))
+                self.send_header('Access-Control-Allow-Origin','*')
+                self.end_headers()
+                self.wfile.write(out_bytes)
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type','application/json')
+                self.send_header('Access-Control-Allow-Origin','*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
+        elif self.path in ('/generate/ca', '/generate/ca/pdf'):
+            # CA-only route — uses Fundkey-branded templates + 3-page CA disclosure.
+            # Existing FundGate routes are untouched.
+            want_pdf = self.path.endswith('/pdf')
+            length = int(self.headers.get('Content-Length', 0))
+            data = json.loads(self.rfile.read(length))
+            try:
+                # Force flags so fill_docx picks Fundkey templates and blanks email.
+                data['isCA'] = True
+                data['State_of_Organization'] = 'CA'
+                docx_bytes = fill_docx(data)
+                disc_bytes = build_ca_disclosure_bytes(data)
+                if disc_bytes:
+                    docx_bytes = merge_disclosure_into_contract(docx_bytes, disc_bytes)
+                if want_pdf:
+                    out_bytes = docx_to_pdf(docx_bytes)
+                    mime      = 'application/pdf'
+                    fname     = safe_filename_ca(data, 'pdf')
+                else:
+                    out_bytes = docx_bytes
+                    mime      = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    fname     = safe_filename_ca(data, 'docx')
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
                 self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')
