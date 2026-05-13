@@ -428,7 +428,7 @@ select{text-transform:uppercase;}
       <div class="field-wrap full"><label>Bank Name</label><input type="text" id="Bank_Name" placeholder="Chase, Bank of America, etc."></div>
       <div class="field-wrap"><label>Routing Number</label><input type="text" id="Routing_Number" placeholder="021000021" maxlength="9"></div>
       <div class="field-wrap"><label>Account Number</label><input type="text" id="Account_Number" placeholder="XXXXXXXXXX"></div>
-      <div class="field-wrap full" style="display:none;"><input type="hidden" id="Authorized_Signer_Name"></div>
+      <div class="field-wrap full"><label>Authorized Signer Name</label><input type="text" id="Authorized_Signer_Name" placeholder="Full name"></div>
       <div class="field-wrap full"><label>Signer Title</label><input type="text" id="Signer_Title" placeholder="President / Owner / Manager"></div>
     </div>
   </div>
@@ -438,11 +438,11 @@ select{text-transform:uppercase;}
     <div class="section-title"><div class="icon">✍️</div> Merchant & Guarantor</div>
     <div class="section-sub">Flows to all signature pages automatically</div>
     <div class="field-grid">
-      <input type="hidden" id="Merchant_1">
+      <div class="field-wrap full"><label>Merchant #1 (Owner Print Name)</label><input type="text" id="Merchant_1" placeholder="Owner's full name"></div>
       <div class="field-wrap full"><label>Title</label><input type="text" id="Title" placeholder="Owner / President"></div>
       <hr class="section-divider">
-      <div class="section-label">Signer / Guarantor #1</div>
-      <div class="field-wrap full"><label>Full Legal Name <span style="font-size:11px;color:var(--muted);font-weight:normal;">(used for authorized signer, merchant, and guarantor)</span></label><input type="text" id="Owner_Guarantor_1" placeholder="Full legal name" oninput="mirrorSigner1Name()"></div>
+      <div class="section-label">Guarantor #1</div>
+      <div class="field-wrap full"><label>Guarantor Name</label><input type="text" id="Owner_Guarantor_1" placeholder="Full legal name"></div>
       <div class="field-wrap"><label>Guarantor SSN</label><input type="text" id="Guarantor_SSN" placeholder="XXX-XX-XXXX" maxlength="11"></div>
       <div class="field-wrap"><label>Driver's License #</label><input type="text" id="Guarantor_Driver_License" placeholder="License number"></div>
 
@@ -655,18 +655,6 @@ function calcPaymentFromTerm() {
     document.getElementById('Specific_Weekly_Amount').value = fmt(weeklyAmt);
     document.getElementById('Specific_Daily_Amount').value = fmt(dailyAmt);
   }
-}
-
-// Mirror the consolidated "Signer & Guarantor Name" into the hidden
-// Authorized_Signer_Name and Merchant_1 inputs, so the submission payload
-// is identical to typing the name into all three fields individually.
-// (Contract code is untouched — it still reads from those three field IDs.)
-function mirrorSigner1Name() {
-  const v = document.getElementById('Owner_Guarantor_1').value;
-  const a = document.getElementById('Authorized_Signer_Name');
-  const m = document.getElementById('Merchant_1');
-  if (a) a.value = v;
-  if (m) m.value = v;
 }
 
 function selectDealType(type, isFundkey) {
