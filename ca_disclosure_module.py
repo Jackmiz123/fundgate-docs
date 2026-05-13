@@ -134,6 +134,32 @@ NS = ('xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
       'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"')
 
 
+def _runs_rich(text, size=22):
+    """Parse a string with **bold** inline markers into multiple <w:r> runs.
+
+    Example: 'funding **FundGate LLC** will provide' produces 3 runs:
+       'funding ' (regular) + 'FundGate LLC' (bold) + ' will provide' (regular)
+    This is how we get the selective bolding seen in the reference PDF.
+    """
+    parts = []
+    current = []
+    is_bold = False
+    i = 0
+    while i < len(text):
+        if text[i:i+2] == '**':
+            if current:
+                parts.append((''.join(current), is_bold))
+                current = []
+            is_bold = not is_bold
+            i += 2
+        else:
+            current.append(text[i])
+            i += 1
+    if current:
+        parts.append((''.join(current), is_bold))
+    return ''.join(_run(t, bold=b, size=size) for t, b in parts if t)
+
+
 def _safe(s):
     return (s or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
@@ -182,8 +208,11 @@ def _page_break():
             '<w:br w:type="page"/></w:r></w:p>')
 
 
-def _cell(content_xml, width_dxa, vmerge=None, shading=None, borders=True):
-    """Build a <w:tc>. content_xml is one or more <w:p> elements."""
+def _cell(content_xml, width_dxa, vmerge=None, shading=None, borders=True, valign='center'):
+    """Build a <w:tc>. content_xml is one or more <w:p> elements.
+    valign='center' makes content vertically centered in the cell — matches
+    the Angry Petes reference where values like '$50,000.00' sit centered
+    next to multi-line descriptions."""
     tcpr = '<w:tcPr>'
     tcpr += f'<w:tcW w:w="{width_dxa}" w:type="dxa"/>'
     if vmerge:
@@ -198,8 +227,11 @@ def _cell(content_xml, width_dxa, vmerge=None, shading=None, borders=True):
              '<w:right w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
              '</w:tcBorders>')
         tcpr += b
-    tcpr += '<w:tcMar><w:top w:w="80" w:type="dxa"/><w:left w:w="100" w:type="dxa"/>'
-    tcpr += '<w:bottom w:w="80" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tcMar>'
+    if valign:
+        tcpr += f'<w:vAlign w:val="{valign}"/>'
+    # Wider top/bottom padding for the breathing room visible in the reference
+    tcpr += '<w:tcMar><w:top w:w="160" w:type="dxa"/><w:left w:w="140" w:type="dxa"/>'
+    tcpr += '<w:bottom w:w="160" w:type="dxa"/><w:right w:w="140" w:type="dxa"/></w:tcMar>'
     tcpr += '</w:tcPr>'
     return f'<w:tc>{tcpr}{content_xml}</w:tc>'
 
@@ -302,165 +334,222 @@ def build_ca_disclosure_bytes(data):
     orig_fee_fmt = _fmt_currency(orig_fee)
     fees_fmt = _fmt_currency(total_fees)
 
-    # Column widths (total 10800 dxa)
-    W_LABEL = 2200
+    # ═══════════════════════════════════════════════════════════════════════
+    # ANGRY PETES FORMAT — must match the manually-generated reference PDF
+    # exactly. Provider name = Fundkey LLC for Fundkey route, FundGate LLC
+    # otherwise. (Today's CA flow is Fundkey-only, but the branding swap is
+    # honored for safety.)
+    # ═══════════════════════════════════════════════════════════════════════
+    is_fundkey = bool(data.get('isFundkey', False) or data.get('isCA', False))
+    provider = 'Fundkey LLC' if is_fundkey else 'FundGate LLC'
+
+    # ─── Column widths — total 10800 dxa ────────────────────────────────────
+    W_LABEL = 2400
     W_VALUE = 2400
-    W_DESC = 6200
+    W_DESC  = 6000
 
-    # ─── Build PAGE 1 ───────────────────────────────────────────────────────
-    # Title block
-    title_runs = [
-        _para([_run('FUNDING DISCLOSURE', bold=True, size=28)],
-              align='center', spacing_before=0, spacing_after=80),
-        _para([_run('California Commercial Financing Disclosure', bold=True, size=22)],
-              align='center', spacing_before=0, spacing_after=80),
-        _para([_run('Provided pursuant to California Financial Code §§ 22800–22805 and '
-                    '10 CCR §§ 901 et seq.', italic=True, size=18)],
-              align='center', spacing_before=0, spacing_after=120),
-        _para([_run(f'Recipient: {merchant_dba}', bold=True, size=20)],
-              align='center', spacing_before=0, spacing_after=40),
-        _para([_run(f'Date: {date_display}', size=20)],
-              align='center', spacing_before=0, spacing_after=200),
-    ]
-
-    # The disclosure table rows
-    def cell_label(text):
-        return _cell(
-            _para([_run(text, bold=True, size=20)], align='left', spacing_after=0),
-            W_LABEL, shading='E7E6E6')
+    # ─── Cell builders ──────────────────────────────────────────────────────
+    # Font sizes (half-points): 22=11pt body, 24=12pt value text.
+    # Descriptions support inline **bold** markers via _runs_rich().
+    def cell_label(text, sub_lines=None):
+        """Bold, light-gray-shaded label cell (left column).
+        Reference shows: label at top, blank gap, then sub-lines below.
+        Top-aligned so the label stays at top of tall rows."""
+        paras = [_para([_run(text, bold=True, size=22)], align='left', spacing_after=0)]
+        if sub_lines:
+            # Blank spacer paragraph (matches the visible gap in reference)
+            paras.append(_para([_run('', size=22)], align='left', spacing_after=0))
+            for line in sub_lines:
+                paras.append(_para([_run(line, bold=True, size=22)], align='left', spacing_after=0))
+        return _cell(''.join(paras), W_LABEL, shading='E7E6E6', valign='top')
 
     def cell_value(text, sub=None):
-        runs = [_para([_run(text, bold=True, size=22)], align='center', spacing_after=20)]
+        """Center-aligned value cell (middle column)."""
+        runs = [_para([_run(text, bold=True, size=24)], align='center', spacing_after=0)]
         if sub:
-            runs.append(_para([_run(sub, size=16)], align='center', spacing_after=0))
+            runs.append(_para([_run(sub, size=22)], align='center', spacing_after=0))
         return _cell(''.join(runs), W_VALUE)
 
-    def cell_desc(text):
+    def cell_value_blank():
+        return _cell(_para([_run('', size=22)], align='center'), W_VALUE)
+
+    def cell_merged_value(text):
+        """Value cell that spans value+description columns (centered)."""
         return _cell(
-            _para([_run(text, size=18)], align='left', spacing_after=0),
-            W_DESC)
+            _para([_run(text, bold=True, size=24)], align='center', spacing_after=0),
+            W_VALUE + W_DESC)
 
-    rows = []
-    # Row 1: Funding Provided
-    rows.append(_row([
-        cell_label('Funding Provided'),
-        cell_value(pp_fmt, sub=f'Net to Recipient: {net_fmt}'),
-        cell_desc(
-            f'The total dollar amount of funding Fundkey LLC will provide. The amount received by '
-            f'the recipient ({net_fmt}) is the funding amount minus all fees deducted at funding.')
-    ]))
-    # Row 2: APR
-    rows.append(_row([
-        cell_label('Estimated Annual Percentage Rate'),
-        cell_value(f'{apr:.2f}%'),
-        cell_desc(
-            'APR is the estimated cost of your financing, including fees, expressed as a yearly rate. '
-            'APR is provided for comparison purposes. APR is not an interest rate. Your financing '
-            'agreement does not provide for an interest rate. APR represents the cost of fees charged '
-            'by Fundkey LLC rather than interest.')
-    ]))
-    # Row 3: Finance Charge
-    rows.append(_row([
-        cell_label('Finance Charge'),
-        cell_value(fc_fmt),
-        cell_desc('The dollar cost of your financing, including all fees and other charges.')
-    ]))
-    # Row 4: Total Payment Amount
-    rows.append(_row([
-        cell_label('Total Payment Amount'),
-        cell_value(pa_fmt),
-        cell_desc('The total dollar amount you will pay, including the amount funded and the finance charge.')
-    ]))
-    # Row 5: Estimated Monthly Cost
-    rows.append(_row([
-        cell_label('Estimated Monthly Cost'),
-        cell_value(em_fmt),
-        cell_desc(
-            'Although you do not make payments on a monthly basis, this is our calculation of your '
-            'average monthly cost based upon the payment amounts disclosed below.')
-    ]))
-    # Row 6: Estimated Payment
-    rows.append(_row([
-        cell_label(f'Estimated {period_label_cap} Payment'),
-        cell_value(f'{pmt_fmt}/{period_label}', sub=f'({n_payments} payments)'),
-        cell_desc(
-            f'Payments are tendered in {period_label_cap.lower()} increments via automatic '
-            'ACH debit from the recipient\'s designated business bank account. Fundkey LLC '
-            'reserves the right to reconcile the amount upon recipient request as set forth '
-            'in Section 3 of the Agreement.')
-    ]))
-    # Row 7: Avg Monthly Revenue
-    rows.append(_row([
-        cell_label('Avg. Monthly Income'),
-        cell_value(rev_fmt),
-        cell_desc(
-            'The recipient\'s historical average monthly gross income from sales is used to '
-            'estimate the term and the annual percentage rate.')
-    ]))
-    # Row 8: Estimated Term
-    rows.append(_row([
-        cell_label('Estimated Term'),
-        cell_value(f'{est_term_months} months'),
-        cell_desc(
-            f'The estimated number of months it will take to deliver the Total Payment Amount '
-            f'based on the recipient\'s historical average monthly income and the specified '
-            f'percentage of {spec_pct:.2f}%.')
-    ]))
-    # Row 9: Prepayment
-    rows.append(_row([
-        cell_label('Prepayment'),
-        cell_value('See description'),
-        cell_desc(
-            'You will not pay any additional charge to prepay this financing. If you pay off '
-            'the financing early, you will not be required to pay the full finance charge; '
-            'you may be eligible for a discounted payoff amount as set forth in any addendum '
-            'to the Agreement.')
-    ]))
+    def cell_merged_desc(paragraphs):
+        """Description cell that spans value+description columns. Supports
+        inline **bold** markers in each paragraph string."""
+        out = []
+        for i, p in enumerate(paragraphs):
+            after = 140 if i < len(paragraphs) - 1 else 0
+            if not p:
+                out.append(_para([_run('', size=22)], align='left', spacing_after=after))
+            else:
+                out.append(_para(_runs_rich(p, size=22), align='left', spacing_after=after))
+        return _cell(''.join(out), W_VALUE + W_DESC, valign='top')
 
-    disclosure_table = _table(rows, total_width_dxa=10800)
+    def cell_desc(paragraphs):
+        """Description cell (right column). Supports inline **bold** markers."""
+        out = []
+        for i, p in enumerate(paragraphs):
+            after = 140 if i < len(paragraphs) - 1 else 0
+            if not p:
+                out.append(_para([_run('', size=22)], align='left', spacing_after=after))
+            else:
+                out.append(_para(_runs_rich(p, size=22), align='left', spacing_after=after))
+        return _cell(''.join(out), W_DESC, valign='top')
 
-    # ─── Build PAGE 2 ───────────────────────────────────────────────────────
-    page_break_1 = _page_break()
-
-    acknowledgment_paras = [
-        _para([_run('Acknowledgment', bold=True, size=22)],
-              align='left', spacing_before=200, spacing_after=80),
-        _para([_run(
-            'Applicable law requires Fundkey LLC to provide this disclosure to you and to '
-            'obtain your signature acknowledging your receipt of this disclosure. Your signature '
-            'below acknowledges only that you received this disclosure. It does not constitute '
-            'agreement to the terms of the financing or any contract.', size=18)],
-              align='both', spacing_before=0, spacing_after=120),
-        _para([_run(
-            'You can find more information about the Department of Financial Protection and '
-            'Innovation, the agency that regulates commercial financing in California, at '
-            'https://dfpi.ca.gov.', size=18, italic=True)],
-              align='both', spacing_before=0, spacing_after=200),
+    # ─── Title block ────────────────────────────────────────────────────────
+    title_paras = [
+        _para([_run('OFFER SUMMARY – REVENUE-BASED FINANCING', bold=True, size=26)],
+              align='center', spacing_before=0, spacing_after=240),
     ]
 
-    # Signature block — invisible 3-column table for alignment
-    def sig_line_row(label_left, label_right, line_width_left=4400, gap=400, line_width_right=2800):
-        # Underscored signature line cells with labels underneath
-        sig_cell_left = _cell(
-            _para([_run('_' * 60, size=20)], align='left', spacing_after=20)
-            + _para([_run(label_left, size=18)], align='left', spacing_after=0),
-            line_width_left, borders=False)
-        gap_cell = _cell(_para([_run('', size=20)], align='left'), gap, borders=False)
-        sig_cell_right = _cell(
-            _para([_run('_' * 30, size=20)], align='left', spacing_after=20)
-            + _para([_run(label_right, size=18)], align='left', spacing_after=0),
-            line_width_right, borders=False)
-        return _row([sig_cell_left, gap_cell, sig_cell_right])
+    # ─── Row 1: Funding Provided ────────────────────────────────────────────
+    funding_label_subs = [
+        'to ' + merchant_name,
+        '/ ' + merchant_dba,
+    ] if merchant_name else []
+    row1 = _row([
+        cell_label('Funding Provided', sub_lines=funding_label_subs),
+        cell_value(pp_fmt),
+        cell_desc([
+            f'This is how much funding **{provider}** will provide.',
+            f'Due to deductions or payments to others, the total funds that will be provided to you directly is **{net_fmt}**.',
+            'This amount may increase or decrease based on your final balances with others or any changes to deductions.',
+        ]),
+    ])
 
-    sig_rows = [sig_line_row(f'Recipient Signature ({signer1_name})', 'Date')]
+    # ─── Row 2: APR ─────────────────────────────────────────────────────────
+    row2 = _row([
+        cell_label('Estimated Annual Percentage Rate (APR)'),
+        cell_value(f'{apr:.2f}%'),
+        cell_desc([
+            'APR is the estimated cost of your financing expressed as a yearly rate. '
+            'APR incorporates the amount and timing of the funding you receive, fees you pay, '
+            'and the periodic payments you make. This calculation assumes your estimated '
+            f'average monthly income through your sales of goods and services will be **{rev_fmt}**. '
+            'Since your actual income may vary from our estimate, your effective APR may also vary.',
+            f'APR is not an interest rate. The cost of this financing is based upon fees charged '
+            f'by **{provider}** rather than interest that accrues over time.',
+        ]),
+    ])
+
+    # ─── Row 3: Finance Charge ──────────────────────────────────────────────
+    row3 = _row([
+        cell_label('Finance Charge'),
+        cell_value(fc_fmt),
+        cell_desc([
+            'This is the dollar cost of your financing.',
+            'Your finance charge will not increase if you take longer to pay off what you owe.',
+        ]),
+    ])
+
+    # ─── Row 4: Estimated Total Payment Amount ──────────────────────────────
+    row4 = _row([
+        cell_label('Estimated Total Payment Amount'),
+        cell_value(pa_fmt),
+        cell_desc([
+            'This is the total dollar amount of payments we estimate you will make under the contract.',
+        ]),
+    ])
+
+    # ─── Row 5: Estimated Monthly Cost ──────────────────────────────────────
+    row5 = _row([
+        cell_label('Estimated Monthly Cost'),
+        cell_value(em_fmt),
+        cell_desc([
+            'Although you do not make payments on a monthly basis, this is our calculation of '
+            'your average monthly cost based upon the payment amounts disclosed below.',
+        ]),
+    ])
+
+    # ─── Row 6: Estimated Payment (label + merged value spanning to right edge) ───
+    row6 = _row([
+        cell_label('Estimated Payment'),
+        cell_merged_value(f'{pmt_fmt} per {period_label}'),
+    ])
+
+    # ─── Row 7: Payment Terms (separate row, label + merged description) ──────
+    payment_terms_paras = [
+        'Payments are tendered in daily or weekly increments. Daily payments are deducted '
+        'every business day, Monday through Friday, and are debited from your business bank '
+        'account. If the debit is scheduled for a bank holiday, it will be processed on the '
+        'next business day, in addition to the regularly scheduled daily debit.',
+        'Weekly payments are deducted once weekly. If the scheduled day is a bank holiday, '
+        'it will be deducted on the next business day.',
+        f'If the payment under the Agreement is a weekly payment, **{provider}** reserves the right '
+        'to switch the payment to a daily payment in the event of the return of 2 consecutive '
+        'weekly payments, among any other rights and remedies under the Agreement. The daily '
+        'payment would be the weekly payment divided by 5.',
+        f'The Estimated Payment is based on **{spec_pct:.2f}%** of your estimated daily business receipts. '
+        'This financing does not have a fixed payment schedule and there is no minimum payment amount.',
+        'Upon review of information provided by recipient and the nature of the recipient\'s '
+        'business, the Provider does not have a reasonable basis to anticipate a true-up. '
+        'Recipient should refer to **Section 3 of the Agreement for the reconciliation procedure**.',
+    ]
+    row7 = _row([
+        cell_label('Payment Terms'),
+        cell_merged_desc(payment_terms_paras),
+    ])
+
+    # ─── Row 8: Estimated Term (standard 3-column layout) ──────────────────────
+    row8 = _row([
+        cell_label('Estimated Term'),
+        cell_value(str(est_term_months)),
+        cell_desc([
+            'Based upon your expected average sales revenue and purchase percentage, this is our '
+            'estimate of how long (in months) it will take to collect the amounts due under the '
+            'Purchase Agreement.',
+        ]),
+    ])
+
+    # ─── Row 9: Prepayment (label + merged description, no value column) ──────
+    row9 = _row([
+        cell_label('Prepayment'),
+        cell_merged_desc([
+            f'If you pay off the financing faster than required, you still must pay all or a '
+            f'portion of the finance charge up to **{fc_fmt}** based upon our estimates.',
+            'If you pay off the financing faster than required, you will not be required to pay '
+            'additional fees.',
+        ]),
+    ])
+
+    disclosure_table = _table([row1, row2, row3, row4, row5, row6, row7, row8, row9],
+                              total_width_dxa=10800)
+
+    # ─── Acknowledgment + signature ─────────────────────────────────────────
+    ack_para = _para([_run(
+        'Applicable law requires this information to be provided to you to help you make an '
+        'informed decision. By signing below, you are confirming that you received this information.',
+        bold=True, size=22)],
+        align='left', spacing_before=320, spacing_after=320)
+
+    # Signature row — invisible 3-column table: signature line | gap | date line
+    def sig_block(name):
+        sig_cell = _cell(
+            _para([_run('_' * 60, size=20)], align='left', spacing_after=20)
+            + _para([_run(f'Recipient Signature ({name})', size=18)],
+                    align='left', spacing_after=0),
+            6400, borders=False)
+        gap_cell = _cell(_para([_run('', size=20)], align='left'), 400, borders=False)
+        date_cell = _cell(
+            _para([_run('_' * 30, size=20)], align='left', spacing_after=20)
+            + _para([_run('Date', size=18)], align='left', spacing_after=0),
+            4000, borders=False)
+        return _row([sig_cell, gap_cell, date_cell])
+
+    sig_rows = [sig_block(signer1_name if signer1_name else '')]
     if two_signers and signer2_name:
-        # Add a spacer row then second signer row
-        spacer_cell = _cell(_para([_run('', size=16)]), 10800, borders=False)
-        sig_rows.append(_row([spacer_cell]))
-        sig_rows.append(sig_line_row(f'Recipient Signature ({signer2_name})', 'Date'))
+        spacer = _cell(_para([_run('', size=18)]), 10800, borders=False)
+        sig_rows.append(_row([spacer]))
+        sig_rows.append(sig_block(signer2_name))
 
     sig_table = _table(sig_rows, total_width_dxa=10800)
-    # Replace tblBorders with nil for invisible signature table
+    # Hide signature-table borders
     sig_table = sig_table.replace(
         '<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
         '<w:left w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
@@ -475,67 +564,70 @@ def build_ca_disclosure_bytes(data):
         '</w:tblBorders>'
     )
 
-    # ─── Build PAGE 3 — Itemization of Amount Financed ──────────────────────
-    page_break_2 = _page_break()
+    # ─── Itemization of Amount Financed (separate page) ─────────────────────
+    page_break_to_item = _page_break()
 
-    item_title = _para([_run('Itemization of Amount Financed', bold=True, size=24)],
-                       align='center', spacing_before=200, spacing_after=200)
+    item_title = _para([_run('ITEMIZATION OF AMOUNT FINANCED', bold=True, size=24)],
+                       align='center', spacing_before=120, spacing_after=240)
 
     # Itemization table — 2 columns: Description | Amount
     W_DESC2 = 7600
     W_AMT2 = 3200
 
-    def item_row(desc, amount, bold=False):
+    def item_row(desc, amount, bold_amount=False, shaded=False, indent=False):
+        desc_para = _para(
+            [_run(desc, bold=False, size=20)],
+            align='left',
+            spacing_after=0,
+            indent_left=400 if indent else None)
+        amt_para = _para([_run(amount, bold=bold_amount, size=20)], align='right',
+                         spacing_after=0)
         return _row([
-            _cell(_para([_run(desc, bold=bold, size=20)], align='left'), W_DESC2),
-            _cell(_para([_run(amount, bold=bold, size=20)], align='right'), W_AMT2),
+            _cell(desc_para, W_DESC2, shading='E7E6E6' if shaded else None),
+            _cell(amt_para, W_AMT2),
         ])
 
+    # Build itemization following Angry Petes layout precisely
     item_rows = [
-        # Header
-        _row([
-            _cell(_para([_run('Description', bold=True, size=20)], align='left'),
-                  W_DESC2, shading='E7E6E6'),
-            _cell(_para([_run('Amount', bold=True, size=20)], align='right'),
-                  W_AMT2, shading='E7E6E6'),
-        ]),
-        item_row('1. Amount Given to You Directly (Net Funding)', net_fmt),
+        item_row('1. Amount Given Directly to You', net_fmt),
         item_row('2. ACH Program Fee', ach_fee_fmt),
         item_row('3. Origination Fee', orig_fee_fmt),
-        item_row('4. Total Fees Deducted at Funding', fees_fmt, bold=True),
-        item_row('5. Amount Paid on Your Account with Fundkey LLC (Funding Provided)',
-                 pp_fmt, bold=True),
+        item_row('4. Amount paid on your behalf to third parties (5a + 5b + 5c)',
+                 _fmt_currency(0)),
+        item_row('5a.', _fmt_currency(0), indent=True),
+        item_row('5b.', _fmt_currency(0), indent=True),
+        item_row('5c.', _fmt_currency(0), indent=True),
+        item_row(f'5. Amount Paid on Your Account with {provider}',
+                 _fmt_currency(0)),
+        item_row('     Advance #', '', indent=True),
+        item_row('6. Amount Provided to You or on Your Behalf', pp_fmt),
+        item_row('7. Prepaid Finance Charges: ACH Program Fee + Origination Fee',
+                 fees_fmt),
+        item_row('8. Amount Financed', net_fmt),
     ]
     item_table = _table(item_rows, total_width_dxa=10800)
 
-    item_note = _para([_run(
-        'The above amounts represent how the Funding Provided is allocated. Total Fees Deducted '
-        'at Funding plus Amount Given to You Directly equals the Funding Provided amount.',
-        italic=True, size=18)], align='both', spacing_before=200, spacing_after=0)
-
-    # ─── Section properties (page margins 0.5" all around) ──────────────────
-    # 0.5" = 720 twips
+    # ─── Section properties (page margins 0.75") ────────────────────────────
+    # 0.75" = 1080 twips — slightly more generous than 0.5" to match reference
     sect_pr = (
         '<w:sectPr>'
         '<w:pgSz w:w="12240" w:h="15840"/>'
-        '<w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720" '
+        '<w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080" '
         'w:header="720" w:footer="720" w:gutter="0"/>'
         '<w:cols w:space="720"/>'
         '<w:docGrid w:linePitch="360"/>'
         '</w:sectPr>'
     )
 
-    # ─── Assemble document.xml body ────────────────────────────────────────
+    # ─── Assemble body ──────────────────────────────────────────────────────
     body = (
-        ''.join(title_runs)
+        ''.join(title_paras)
         + disclosure_table
-        + page_break_1
-        + ''.join(acknowledgment_paras)
+        + ack_para
         + sig_table
-        + page_break_2
+        + page_break_to_item
         + item_title
         + item_table
-        + item_note
         + sect_pr
     )
 
