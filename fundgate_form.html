@@ -363,11 +363,12 @@ select{text-transform:uppercase;}
     <div class="field-grid">
       <div class="field-wrap full"><label>Purchase Price</label><div class="input-prefix"><span>$</span><input type="text" id="Purchase_Price" placeholder="50,000.00" oninput="calcPurchasedAmt();calcAddendum()"></div></div>
       <div style="display:flex;gap:8px;align-items:flex-end;">
-        <div class="field-wrap" style="flex:1;margin:0;"><label>Factor Rate</label><input type="text" id="factor_purchased" placeholder="1.40" oninput="calcPurchasedAmt()"></div>
-        <div class="field-wrap" style="flex:2;margin:0;"><label>Purchased Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Purchased_Amount" placeholder="70,000.00"></div></div>
+        <div class="field-wrap" style="flex:1;margin:0;"><label>Factor Rate</label><input type="text" id="factor_purchased" placeholder="1.40" oninput="calcPurchasedAmt();calcPaymentFromTerm()"></div>
+        <div class="field-wrap" style="flex:2;margin:0;"><label>Purchased Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Purchased_Amount" placeholder="70,000.00" oninput="calcPaymentFromTerm()"></div></div>
       </div>
       <div class="field-wrap"><label>Specified Percentage <button type="button" onclick="openCalcModal()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;margin-left:6px;vertical-align:middle;">🧮 Calculator</button></label><div class="input-prefix"><span>%</span><input type="text" id="Specified_Percentage" placeholder="15"></div></div>
       <div class="field-wrap"><label>ACH Frequency</label><input type="text" id="ACH_Frequency" value="Weekly" readonly style="background:rgba(255,255,255,0.05);color:var(--text-muted);cursor:not-allowed;"></div>
+      <div class="field-wrap" id="wrap_term"><label id="lbl_term">Number of Weeks <span style="color:var(--accent)">*</span> <span style="font-size:11px;color:var(--muted);font-weight:normal;">(auto-calculates payment)</span></label><input type="text" id="Payment_Term_Count" placeholder="24" oninput="calcPaymentFromTerm()"></div>
       <div class="field-wrap" id="wrap_weekly_amt"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00"></div></div>
       <div class="field-wrap" id="wrap_daily_amt"><label>Specific Daily Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
       <div class="field-wrap full" id="wrap_ca_avg_rev" style="display:none;"><label>Avg Monthly Revenue (CA Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="CA_Avg_Monthly_Revenue" placeholder="120,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives Estimated Term on the disclosure.</div></div>
@@ -427,7 +428,7 @@ select{text-transform:uppercase;}
       <div class="field-wrap full"><label>Bank Name</label><input type="text" id="Bank_Name" placeholder="Chase, Bank of America, etc."></div>
       <div class="field-wrap"><label>Routing Number</label><input type="text" id="Routing_Number" placeholder="021000021" maxlength="9"></div>
       <div class="field-wrap"><label>Account Number</label><input type="text" id="Account_Number" placeholder="XXXXXXXXXX"></div>
-      <div class="field-wrap full"><label>Authorized Signer Name</label><input type="text" id="Authorized_Signer_Name" placeholder="Full name"></div>
+      <div class="field-wrap full" style="display:none;"><input type="hidden" id="Authorized_Signer_Name"></div>
       <div class="field-wrap full"><label>Signer Title</label><input type="text" id="Signer_Title" placeholder="President / Owner / Manager"></div>
     </div>
   </div>
@@ -437,11 +438,11 @@ select{text-transform:uppercase;}
     <div class="section-title"><div class="icon">✍️</div> Merchant & Guarantor</div>
     <div class="section-sub">Flows to all signature pages automatically</div>
     <div class="field-grid">
-      <div class="field-wrap full"><label>Merchant #1 (Owner Print Name)</label><input type="text" id="Merchant_1" placeholder="Owner's full name"></div>
+      <input type="hidden" id="Merchant_1">
       <div class="field-wrap full"><label>Title</label><input type="text" id="Title" placeholder="Owner / President"></div>
       <hr class="section-divider">
-      <div class="section-label">Guarantor #1</div>
-      <div class="field-wrap full"><label>Guarantor Name</label><input type="text" id="Owner_Guarantor_1" placeholder="Full legal name"></div>
+      <div class="section-label">Signer / Guarantor #1</div>
+      <div class="field-wrap full"><label>Full Legal Name <span style="font-size:11px;color:var(--muted);font-weight:normal;">(used for authorized signer, merchant, and guarantor)</span></label><input type="text" id="Owner_Guarantor_1" placeholder="Full legal name" oninput="mirrorSigner1Name()"></div>
       <div class="field-wrap"><label>Guarantor SSN</label><input type="text" id="Guarantor_SSN" placeholder="XXX-XX-XXXX" maxlength="11"></div>
       <div class="field-wrap"><label>Driver's License #</label><input type="text" id="Guarantor_Driver_License" placeholder="License number"></div>
 
@@ -628,6 +629,46 @@ function calcAddendum() {
   }
 }
 
+// Auto-calc Specific Weekly/Daily Amount from Purchased Amount and Term.
+//
+// Weekly contract: weekly = Purchased / weeks, daily = weekly / 5
+//   (Both fields populated so the contract has both values flowing through —
+//    contract submission logic unchanged.)
+// Daily contract:  daily = Purchased / days
+//
+// Manual edits to the amount fields are not protected: if the user changes
+// the term or the purchased amount afterwards, the auto-calc overwrites.
+// (The amount fields stay editable for fine-tuning after term entry.)
+function calcPaymentFromTerm() {
+  const purchased = parseFloat((document.getElementById('Purchased_Amount').value || '0').replace(/[^0-9.]/g,'')) || 0;
+  const term = parseInt((document.getElementById('Payment_Term_Count').value || '0').replace(/[^0-9]/g,''), 10) || 0;
+  if (purchased <= 0 || term <= 0) return;
+  const isDaily = (typeof DEAL_TYPE !== 'undefined' && DEAL_TYPE === 'daily');
+  const fmt = (n) => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (isDaily) {
+    const dailyAmt = purchased / term;
+    document.getElementById('Specific_Daily_Amount').value = fmt(dailyAmt);
+    // Don't touch weekly field on daily deals
+  } else {
+    const weeklyAmt = purchased / term;
+    const dailyAmt = weeklyAmt / 5;
+    document.getElementById('Specific_Weekly_Amount').value = fmt(weeklyAmt);
+    document.getElementById('Specific_Daily_Amount').value = fmt(dailyAmt);
+  }
+}
+
+// Mirror the consolidated "Signer & Guarantor Name" into the hidden
+// Authorized_Signer_Name and Merchant_1 inputs, so the submission payload
+// is identical to typing the name into all three fields individually.
+// (Contract code is untouched — it still reads from those three field IDs.)
+function mirrorSigner1Name() {
+  const v = document.getElementById('Owner_Guarantor_1').value;
+  const a = document.getElementById('Authorized_Signer_Name');
+  const m = document.getElementById('Merchant_1');
+  if (a) a.value = v;
+  if (m) m.value = v;
+}
+
 function selectDealType(type, isFundkey) {
   DEAL_TYPE = type;            // 'weekly' or 'daily'
   IS_FUNDKEY = !!isFundkey;    // Fundkey entity flag — drives template + branding + disclosure
@@ -664,6 +705,27 @@ function selectDealType(type, isFundkey) {
     if (wklyInput) wklyInput.setAttribute('required', '');
     if (dalyInput) dalyInput.removeAttribute('required');
   }
+  // Update term-input label and placeholder (weeks vs days) and recompute
+  // amounts based on the new deal type.
+  const termLbl = document.getElementById('lbl_term');
+  if (termLbl) {
+    termLbl.innerHTML = isDaily
+      ? 'Number of Days <span style="color:var(--accent)">*</span> <span style="font-size:11px;color:var(--muted);font-weight:normal;">(auto-calculates payment)</span>'
+      : 'Number of Weeks <span style="color:var(--accent)">*</span> <span style="font-size:11px;color:var(--muted);font-weight:normal;">(auto-calculates payment)</span>';
+  }
+  const termInput = document.getElementById('Payment_Term_Count');
+  if (termInput) termInput.placeholder = isDaily ? '80' : '24';
+  // Reset to step 1 when re-entering the form. Field values stay intact —
+  // only the visible step is reset so user doesn't land mid-form.
+  if (typeof currentStep !== 'undefined') {
+    currentStep = 0;
+    document.querySelectorAll('.section-card').forEach(c => c.classList.remove('visible'));
+    const step0 = document.getElementById('step0');
+    if (step0) step0.classList.add('visible');
+    if (typeof updateNav === 'function') updateNav();
+    if (typeof updateProgress === 'function') updateProgress();
+  }
+  if (typeof calcPaymentFromTerm === 'function') calcPaymentFromTerm();
   // Fundkey path: show Avg Monthly Revenue field (used by CA disclosure).
   // State is NOT locked to CA — user picks any state. For non-CA states the
   // revenue field is simply ignored by the disclosure logic.
