@@ -599,7 +599,6 @@ def build_ca_disclosure_bytes(data):
         item_row('5c.', _fmt_currency(0), indent=True),
         item_row(f'5. Amount Paid on Your Account with {provider}',
                  _fmt_currency(0)),
-        item_row('     Advance #', '', indent=True),
         item_row('6. Amount Provided to You or on Your Behalf', pp_fmt),
         item_row('7. Prepaid Finance Charges: ACH Program Fee + Origination Fee',
                  fees_fmt),
