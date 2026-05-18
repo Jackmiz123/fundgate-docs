@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Past Deals · FundGate</title>
+<style>
+  :root {
+    --bg: #0c1422;
+    --panel: #131d31;
+    --panel-2: #1a2541;
+    --line: #243154;
+    --text: #e6ebf5;
+    --muted: #8693b5;
+    --accent: #4aa9ff;
+    --accent-2: #18d2c4;
+    --danger: #ff5a6e;
+    --ok: #2ecc71;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; }
+  .nav { background: var(--panel); border-bottom: 1px solid var(--line); padding: 14px 24px; display: flex; align-items: center; gap: 24px; }
+  .nav .brand { font-weight: 700; font-size: 18px; color: var(--accent); }
+  .nav a { color: var(--muted); text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 14px; }
+  .nav a:hover { color: var(--text); background: var(--panel-2); }
+  .nav a.active { color: var(--text); background: var(--panel-2); }
+  .nav .spacer { flex: 1; }
+  .nav .logout { color: var(--muted); font-size: 12px; cursor: pointer; }
+  .nav .logout:hover { color: var(--danger); }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  h1 { margin: 0 0 8px 0; font-size: 28px; }
+  .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
+
+  .login-box { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 32px; }
+  .login-box h2 { margin: 0 0 6px 0; font-size: 20px; }
+  .login-box p { color: var(--muted); font-size: 13px; margin: 0 0 24px 0; }
+  .login-box input { width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--text); padding: 12px 14px; border-radius: 8px; font-size: 15px; margin-bottom: 12px; }
+  .login-box input:focus { outline: none; border-color: var(--accent); }
+  .login-box button { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .login-box button:hover { background: #3a96eb; }
+  .login-box .err { color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 18px; }
+
+  .search-row { display: flex; gap: 12px; margin-bottom: 20px; }
+  .search-row input { flex: 1; background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .search-row input:focus { outline: none; border-color: var(--accent); }
+  .search-row select { background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+  .search-row button { background: var(--accent); color: white; border: none; padding: 12px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+  .stats { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+
+  .deals-table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .deals-table th { text-align: left; padding: 12px 14px; background: var(--panel-2); font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px; border-bottom: 1px solid var(--line); }
+  .deals-table td { padding: 14px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .deals-table tr:last-child td { border-bottom: none; }
+  .deals-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .merchant-name { font-weight: 600; color: var(--text); }
+  .merchant-dba { color: var(--muted); font-size: 12px; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .badge-fundgate { background: rgba(74,169,255,0.15); color: var(--accent); }
+  .badge-fundkey { background: rgba(24,210,196,0.15); color: var(--accent-2); }
+  .badge-state { background: rgba(255,255,255,0.05); color: var(--muted); }
+  .actions { display: flex; gap: 8px; }
+  .btn-sm { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; text-decoration: none; }
+  .btn-sm:hover { background: var(--line); }
+  .btn-sm.danger:hover { background: var(--danger); border-color: var(--danger); color: white; }
+  .btn-sm.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn-sm.primary:hover { background: #3a96eb; }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
+  .modal-backdrop.show { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+  .modal h3 { margin: 0 0 8px 0; }
+  .modal .meta { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  .modal-row { display: flex; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .modal-row:last-child { border-bottom: none; }
+  .modal-row .k { color: var(--muted); width: 200px; flex-shrink: 0; }
+  .modal-row .v { color: var(--text); }
+  .modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+  .modal-actions button { padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--line); }
+  .modal-actions .close-btn { background: var(--panel-2); color: var(--text); }
+  .modal-actions .clone-btn { background: var(--accent); color: white; border-color: var(--accent); }
+  .modal-actions .delete-btn { background: transparent; color: var(--danger); border-color: var(--danger); margin-right: auto; }
+
+  .notice { background: rgba(74,169,255,0.1); border: 1px solid var(--accent); color: var(--accent); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; display: none; }
+  .notice.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN VIEW -->
+<div id="loginView" style="display:none;">
+  <div class="login-box">
+    <h2>Past Deals</h2>
+    <p>Enter password to access deal history.</p>
+    <input type="password" id="pwInput" placeholder="Password" autocomplete="current-password" autofocus>
+    <button onclick="doLogin()">Sign In</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- DEALS VIEW -->
+<div id="dealsView" style="display:none;">
+  <div class="nav">
+    <div class="brand">FundGate</div>
+    <a href="/">New Deal</a>
+    <a href="/deals" class="active">Past Deals</a>
+    <div class="spacer"></div>
+    <span class="logout" onclick="doLogout()">Sign out</span>
+  </div>
+
+  <div class="container">
+    <h1>Past Deals</h1>
+    <div class="subtitle">Search and clone previous deals to generate new contracts.</div>
+
+    <div class="notice" id="notConfigured">
+      ⚠️ Supabase is not configured. Set SUPABASE_URL and SUPABASE_KEY in Render environment variables. Past deals will not appear until configured.
+    </div>
+
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Search by merchant name..." oninput="debouncedSearch()">
+      <select id="entityFilter" onchange="loadDeals()">
+        <option value="">All Entities</option>
+        <option value="FundGate">FundGate Only</option>
+        <option value="Fundkey">Fundkey Only</option>
+      </select>
+    </div>
+
+    <div class="stats" id="stats"></div>
+    <div id="dealsContainer"></div>
+  </div>
+</div>
+
+<!-- DEAL DETAIL MODAL -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+  // ─── Auth gate ────────────────────────────────────────────────────────────
+  async function init() {
+    const resp = await fetch('/deals/check-auth');
+    if (resp.status === 200) {
+      showDeals();
+    } else {
+      document.getElementById('loginView').style.display = '';
+    }
+  }
+
+  async function doLogin() {
+    const pw = document.getElementById('pwInput').value;
+    const errEl = document.getElementById('loginErr');
+    errEl.textContent = '';
+    try {
+      const resp = await fetch('/deals/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({password: pw}),
+      });
+      if (resp.status === 200) {
+        document.getElementById('loginView').style.display = 'none';
+        showDeals();
+      } else {
+        errEl.textContent = 'Incorrect password.';
+      }
+    } catch (e) {
+      errEl.textContent = 'Login failed. Try again.';
+    }
+  }
+
+  async function doLogout() {
+    await fetch('/deals/logout', {method: 'POST'});
+    location.reload();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && document.getElementById('loginView').style.display !== 'none') {
+      doLogin();
+    }
+  });
+
+  // ─── Deals listing ────────────────────────────────────────────────────────
+  function showDeals() {
+    document.getElementById('dealsView').style.display = '';
+    loadDeals();
+  }
+
+  let searchTimer = null;
+  function debouncedSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadDeals, 250);
+  }
+
+  async function loadDeals() {
+    const q = document.getElementById('searchInput').value.trim();
+    const entity = document.getElementById('entityFilter').value;
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (entity) params.set('entity', entity);
+
+    const container = document.getElementById('dealsContainer');
+    const stats = document.getElementById('stats');
+    container.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Loading…</div>';
+
+    const resp = await fetch('/deals/search?' + params.toString());
+    if (resp.status === 503) {
+      document.getElementById('notConfigured').classList.add('show');
+      container.innerHTML = '';
+      stats.textContent = '';
+      return;
+    }
+    if (resp.status !== 200) {
+      container.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div>Failed to load deals.</div>';
+      stats.textContent = '';
+      return;
+    }
+    const deals = await resp.json();
+    renderDeals(deals);
+  }
+
+  function renderDeals(deals) {
+    const container = document.getElementById('dealsContainer');
+    const stats = document.getElementById('stats');
+    if (!deals || deals.length === 0) {
+      container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>No deals yet. Deals are saved automatically when you generate a contract.</div>';
+      stats.textContent = '';
+      return;
+    }
+    stats.textContent = `${deals.length} deal${deals.length === 1 ? '' : 's'} found`;
+    const rows = deals.map(d => {
+      const date = d.agreement_date ? new Date(d.agreement_date + 'T12:00:00').toLocaleDateString('en-US', {year:'numeric', month:'short', day:'numeric'}) : '—';
+      const created = d.created_at ? new Date(d.created_at).toLocaleDateString('en-US', {year:'numeric', month:'short', day:'numeric'}) : '';
+      const pp = d.purchase_price ? '$' + Number(d.purchase_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—';
+      const pa = d.purchased_amount ? '$' + Number(d.purchased_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—';
+      const entityBadge = d.entity === 'Fundkey' ? 'badge-fundkey' : 'badge-fundgate';
+      const dba = d.merchant_dba && d.merchant_dba !== d.merchant_legal_name ? `<div class="merchant-dba">dba ${esc(d.merchant_dba)}</div>` : '';
+      return `
+        <tr>
+          <td>
+            <div class="merchant-name">${esc(d.merchant_legal_name)}</div>
+            ${dba}
+          </td>
+          <td><span class="badge ${entityBadge}">${esc(d.entity || '')}</span></td>
+          <td>${esc(d.deal_type || '')}</td>
+          <td><span class="badge badge-state">${esc(d.state_of_org || '—')}</span></td>
+          <td>${pp}</td>
+          <td>${pa}</td>
+          <td>${date}</td>
+          <td>
+            <div class="actions">
+              <a class="btn-sm" onclick="viewDeal('${d.id}')">View</a>
+              <a class="btn-sm primary" onclick="cloneDeal('${d.id}')">Clone</a>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    container.innerHTML = `
+      <table class="deals-table">
+        <thead>
+          <tr>
+            <th>Merchant</th>
+            <th>Entity</th>
+            <th>Type</th>
+            <th>State</th>
+            <th>Purchase Price</th>
+            <th>Total Payment</th>
+            <th>Agreement Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  async function viewDeal(id) {
+    const resp = await fetch('/deals/' + id);
+    if (resp.status !== 200) {
+      alert('Failed to load deal details');
+      return;
+    }
+    const deal = await resp.json();
+    const d = deal.full_data || {};
+    const fields = [
+      ['Merchant Legal Name', d.Merchant_Legal_Name],
+      ['DBA', d.Merchant_DBA],
+      ['State of Organization', d.State_of_Organization],
+      ['Entity Type', d.Entity_Type],
+      ['Federal EIN', d.Federal_EIN],
+      ['Business Phone', d.Business_Phone],
+      ['Office Address', d.Executive_Office_Address],
+      ['Owner 1', d.Owner_Guarantor_1 + (d.Title ? ' (' + d.Title + ')' : '')],
+      ['Owner 2', d.twoSigners ? (d.Owner_Guarantor_2 + (d.Title_2 ? ' (' + d.Title_2 + ')' : '')) : null],
+      ['Purchase Price', d.Purchase_Price ? '$' + d.Purchase_Price : null],
+      ['Purchased Amount', d.Purchased_Amount ? '$' + d.Purchased_Amount : null],
+      ['Specified %', d.Specified_Percentage ? d.Specified_Percentage + '%' : null],
+      ['ACH Frequency', d.ACH_Frequency],
+      ['Weekly Amount', d.Specific_Weekly_Amount ? '$' + d.Specific_Weekly_Amount : null],
+      ['Daily Amount', d.Specific_Daily_Amount ? '$' + d.Specific_Daily_Amount : null],
+      ['Bank Name', d.Bank_Name],
+      ['Routing #', d.Routing_Number],
+      ['Account #', d.Account_Number],
+      ['Agreement Date', d.Agreement_Date],
+    ].filter(([k,v]) => v != null && v !== '' && v !== ' ()');
+    const html = `
+      <h3>${esc(deal.merchant_legal_name)}</h3>
+      <div class="meta">${esc(deal.entity)} · ${esc(deal.deal_type || '')} · saved ${new Date(deal.created_at).toLocaleString()}</div>
+      ${fields.map(([k,v]) => `<div class="modal-row"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join('')}
+      <div class="modal-actions">
+        <button class="delete-btn" onclick="deleteDeal('${deal.id}')">Delete</button>
+        <button class="close-btn" onclick="closeModal()">Close</button>
+        <button class="clone-btn" onclick="cloneDeal('${deal.id}')">Generate New Contract</button>
+      </div>
+    `;
+    document.getElementById('modalContent').innerHTML = html;
+    document.getElementById('modalBackdrop').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('modalBackdrop').classList.remove('show');
+  }
+
+  async function cloneDeal(id) {
+    // Fetch the deal, stash full_data in sessionStorage, jump to the form
+    const resp = await fetch('/deals/' + id);
+    if (resp.status !== 200) {
+      alert('Failed to load deal for cloning');
+      return;
+    }
+    const deal = await resp.json();
+    try {
+      sessionStorage.setItem('clonedDeal', JSON.stringify({
+        full_data: deal.full_data,
+        entity: deal.entity,
+        merchant_legal_name: deal.merchant_legal_name,
+        agreement_date: deal.agreement_date,
+      }));
+    } catch (e) {}
+    // Redirect to form root with a flag — form JS picks it up from sessionStorage
+    window.location.href = '/?clone=1';
+  }
+
+  async function deleteDeal(id) {
+    if (!confirm('Delete this deal record? The original contract file is not affected.')) return;
+    const resp = await fetch('/deals/' + id, {method: 'DELETE'});
+    if (resp.status === 200 || resp.status === 204) {
+      closeModal();
+      loadDeals();
+    } else {
+      alert('Failed to delete');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

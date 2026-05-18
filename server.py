@@ -7,6 +7,8 @@ from payoff_module import build_payoff_letter
 from zero_balance_module import build_zero_balance_letter
 from ca_disclosure_module import build_ca_disclosure_bytes
 from ny_disclosure_module import build_ny_disclosure_bytes
+import db_module
+import auth_module
 
 TEMPLATE_WEEKLY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_WEEKLY.docx')
 TEMPLATE_DAILY  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_DAILY.docx')
@@ -14,6 +16,7 @@ TEMPLATE_DAILY  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUND
 TEMPLATE_WEEKLY_CA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDKEY_TEMPLATE_WEEKLY.docx')
 TEMPLATE_DAILY_CA  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDKEY_TEMPLATE_DAILY.docx')
 FORM            = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fundgate_form.html')
+DEALS_PAGE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deals_page.html')
 
 SIGNER2_BLOCKS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -519,8 +522,55 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Type','text/html; charset=utf-8')
             self.end_headers()
             self.wfile.write(open(FORM,'rb').read())
+        elif self.path == '/deals' or self.path == '/deals/':
+            # Past Deals page (HTML always served; client-side calls /deals/check-auth)
+            self.send_response(200)
+            self.send_header('Content-Type','text/html; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(open(DEALS_PAGE,'rb').read())
+        elif self.path == '/deals/check-auth':
+            cookie = self.headers.get('Cookie', '')
+            if auth_module.is_valid_cookie(cookie):
+                self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers()
+                self.wfile.write(b'{"ok":true}')
+            else:
+                self.send_response(401); self.send_header('Content-Type','application/json'); self.end_headers()
+                self.wfile.write(b'{"ok":false}')
+        elif self.path.startswith('/deals/search'):
+            if not self._require_auth(): return
+            from urllib.parse import urlparse, parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            q = (qs.get('q', [''])[0] or '').strip()
+            entity = (qs.get('entity', [''])[0] or '').strip() or None
+            if not db_module.is_configured():
+                self.send_response(503); self.send_header('Content-Type','application/json'); self.end_headers()
+                self.wfile.write(b'{"error":"db not configured"}')
+                return
+            results = db_module.search_deals(query=q, entity=entity)
+            self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers()
+            self.wfile.write(json.dumps(results, default=str).encode())
+        elif self.path.startswith('/deals/') and len(self.path.split('/')) == 3:
+            # GET /deals/<id>
+            if not self._require_auth(): return
+            deal_id = self.path.split('/')[2]
+            deal = db_module.get_deal(deal_id)
+            if not deal:
+                self.send_response(404); self.send_header('Content-Type','application/json'); self.end_headers()
+                self.wfile.write(b'{"error":"not found"}')
+                return
+            self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers()
+            self.wfile.write(json.dumps(deal, default=str).encode())
         else:
             self.send_response(404); self.end_headers()
+
+    def _require_auth(self):
+        """Check session cookie; send 401 and return False if invalid. Else True."""
+        cookie = self.headers.get('Cookie', '')
+        if auth_module.is_valid_cookie(cookie):
+            return True
+        self.send_response(401); self.send_header('Content-Type','application/json'); self.end_headers()
+        self.wfile.write(b'{"error":"unauthorized"}')
+        return False
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -559,6 +609,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin','*')
                 self.end_headers()
                 self.wfile.write(out_bytes)
+                # Best-effort auto-save to deals DB (never blocks the response).
+                try:
+                    deal_type = (data.get('dealType') or '').lower() or 'weekly'
+                    db_module.save_deal(data, entity='FundGate', deal_type=deal_type)
+                except Exception as _save_err:
+                    print(f'[db] auto-save failed: {_save_err}')
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type','application/json')
@@ -608,6 +664,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin','*')
                 self.end_headers()
                 self.wfile.write(out_bytes)
+                # Best-effort auto-save to deals DB (never blocks the response).
+                try:
+                    deal_type = (data.get('dealType') or '').lower() or 'weekly'
+                    db_module.save_deal(data, entity='Fundkey', deal_type=deal_type)
+                except Exception as _save_err:
+                    print(f'[db] auto-save failed: {_save_err}')
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type','application/json')
@@ -676,6 +738,42 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
+        elif self.path == '/deals/login':
+            length = int(self.headers.get('Content-Length', 0))
+            try:
+                payload = json.loads(self.rfile.read(length))
+            except Exception:
+                payload = {}
+            if auth_module.check_password(payload.get('password')):
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Set-Cookie', auth_module.cookie_header())
+                self.end_headers()
+                self.wfile.write(b'{"ok":true}')
+            else:
+                self.send_response(401)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"ok":false}')
+        elif self.path == '/deals/logout':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Set-Cookie', auth_module.clear_cookie_header())
+            self.end_headers()
+            self.wfile.write(b'{"ok":true}')
+        else:
+            self.send_response(404); self.end_headers()
+
+    def do_DELETE(self):
+        if self.path.startswith('/deals/') and len(self.path.split('/')) == 3:
+            if not self._require_auth(): return
+            deal_id = self.path.split('/')[2]
+            ok = db_module.delete_deal(deal_id)
+            if ok:
+                self.send_response(204); self.end_headers()
+            else:
+                self.send_response(500); self.send_header('Content-Type', 'application/json'); self.end_headers()
+                self.wfile.write(b'{"error":"delete failed"}')
         else:
             self.send_response(404); self.end_headers()
 
