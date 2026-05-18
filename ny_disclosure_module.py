@@ -199,8 +199,11 @@ def _cell(content_xml, width_dxa, vmerge=None, shading=None, borders=True, valig
     return f'<w:tc>{tcpr}{content_xml}</w:tc>'
 
 
-def _row(cells_xml):
-    return f'<w:tr>{"".join(cells_xml)}</w:tr>'
+def _row(cells_xml, height_dxa=None):
+    tr_pr = ''
+    if height_dxa:
+        tr_pr = f'<w:trPr><w:trHeight w:val="{height_dxa}" w:hRule="atLeast"/></w:trPr>'
+    return f'<w:tr>{tr_pr}{"".join(cells_xml)}</w:tr>'
 
 
 def _table(rows_xml, total_width_dxa=10800):
@@ -414,7 +417,7 @@ def build_ny_disclosure_bytes(data):
             f'Due to deductions or payments to others, the total funds that will be provided to you directly is **{net_fmt}**.',
             'This amount may increase or decrease based on your final balances with others or any changes to deductions.',
         ]),
-    ])
+    ], height_dxa=2400)
 
     # ─── Row 2: Estimated APR ──────────────────────────────────────────────
     row2 = _row([
@@ -431,7 +434,7 @@ def build_ny_disclosure_bytes(data):
             f'based upon fees charged by **{provider}** rather than interest that accrues '
             f'over time.',
         ]),
-    ])
+    ], height_dxa=3400)
 
     # ─── Row 3: Finance Charge ─────────────────────────────────────────────
     row3 = _row([
@@ -441,7 +444,7 @@ def build_ny_disclosure_bytes(data):
             'This is the dollar cost of your financing. Your finance charge will not '
             'increase if you take longer to pay off what you owe.',
         ]),
-    ])
+    ], height_dxa=1700)
 
     # ─── Row 4: Estimated Total Payment Amount ────────────────────────────
     row4 = _row([
@@ -451,7 +454,7 @@ def build_ny_disclosure_bytes(data):
             'This is the total dollar amount of payments we estimate you will make under '
             'the contract.',
         ]),
-    ])
+    ], height_dxa=1700)
 
     # ─── Row 5: Estimated Monthly Cost ────────────────────────────────────
     row5 = _row([
@@ -462,13 +465,13 @@ def build_ny_disclosure_bytes(data):
             'calculation of your average monthly cost based upon the payment amounts '
             'disclosed below.',
         ]),
-    ])
+    ], height_dxa=1900)
 
     # ─── Row 6: Estimated Payment (label + merged value spanning to right) ───
     row6 = _row([
         cell_label('Estimated Payment'),
         cell_merged_value(f'{pmt_fmt} per {period_label}'),
-    ])
+    ], height_dxa=1700)
 
     # ─── Row 7: Estimated Term ────────────────────────────────────────────
     row7 = _row([
@@ -504,8 +507,12 @@ def build_ny_disclosure_bytes(data):
         ]),
     ])
 
-    disclosure_table = _table(
-        [row1, row2, row3, row4, row5, row6, row7, row8, row9],
+    disclosure_table_p1 = _table(
+        [row1, row2, row3, row4, row5, row6],
+        total_width_dxa=10800,
+    )
+    disclosure_table_p2 = _table(
+        [row7, row8, row9],
         total_width_dxa=10800,
     )
 
@@ -619,7 +626,9 @@ def build_ny_disclosure_bytes(data):
     # ─── Assemble body ──────────────────────────────────────────────────────
     body = (
         ''.join(title_paras)
-        + disclosure_table
+        + disclosure_table_p1
+        + _page_break()
+        + disclosure_table_p2
         + ack_para
         + sig_table_offer
         + _page_break()
