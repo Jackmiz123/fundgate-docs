@@ -346,7 +346,7 @@ select{text-transform:uppercase;}
         <select id="Entity_Type"><option value="">Select...</option><option>LLC</option><option>Corporation</option><option>S-Corporation</option><option>Partnership</option><option>Sole Proprietorship</option></select>
       </div>
       <div class="field-wrap"><label>State of Organization</label>
-        <select id="State_of_Organization"><option value="">Select...</option><option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option><option>CO</option><option>CT</option><option>DE</option><option>FL</option><option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option><option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option></select>
+        <select id="State_of_Organization" onchange="updateNYRevField()"><option value="">Select...</option><option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option><option>CO</option><option>CT</option><option>DE</option><option>FL</option><option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option><option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option></select>
       </div>
       <div class="field-wrap full"><label>Address of Executive Offices</label><input type="text" id="Executive_Office_Address" placeholder="Street, City, State, ZIP"></div>
       <div class="field-wrap full"><label>Mailing Address <span style="color:var(--muted);font-size:10px;">(blank = same as above)</span></label><input type="text" id="Mailing_Address" placeholder="Leave blank if same"></div>
@@ -372,6 +372,7 @@ select{text-transform:uppercase;}
       <div class="field-wrap" id="wrap_weekly_amt"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00"></div></div>
       <div class="field-wrap" id="wrap_daily_amt"><label>Specific Daily Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
       <div class="field-wrap full" id="wrap_ca_avg_rev" style="display:none;"><label>Avg Monthly Revenue (CA Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="CA_Avg_Monthly_Revenue" placeholder="120,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives Estimated Term on the disclosure.</div></div>
+      <div class="field-wrap full" id="wrap_ny_avg_rev" style="display:none;"><label>Avg Monthly Revenue (NY Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="NY_Avg_Monthly_Revenue" placeholder="75,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives APR and Estimated Term on the NY disclosure.</div></div>
       <hr class="section-divider">
       <div class="section-label">Appendix A — Fees</div>
       <div class="field-wrap"><label>ACH Program Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="ACH_Program_Fee_Percentage" placeholder="2.5"></div></div>
@@ -719,6 +720,17 @@ function selectDealType(type, isFundkey) {
   // revenue field is simply ignored by the disclosure logic.
   const caWrap = document.getElementById('wrap_ca_avg_rev');
   if (caWrap) caWrap.style.display = IS_FUNDKEY ? '' : 'none';
+  // NY disclosure (FundGate-only): show NY Avg Monthly Revenue field only
+  // when state=NY AND not on the Fundkey route.
+  updateNYRevField();
+}
+
+function updateNYRevField() {
+  const nyWrap = document.getElementById('wrap_ny_avg_rev');
+  if (!nyWrap) return;
+  const stateEl = document.getElementById('State_of_Organization');
+  const state = (stateEl ? stateEl.value : '').toUpperCase();
+  nyWrap.style.display = (state === 'NY' && !IS_FUNDKEY) ? '' : 'none';
 }
 
 function goBackToLanding() {
@@ -1044,6 +1056,7 @@ function getData() {
     // Fundkey route flag (sent to /generate/fundkey when true)
     isFundkey: IS_FUNDKEY,
     CA_Avg_Monthly_Revenue: IS_FUNDKEY ? fmtMoney(fv('CA_Avg_Monthly_Revenue')) : '',
+    NY_Avg_Monthly_Revenue: fmtMoney(fv('NY_Avg_Monthly_Revenue')),
   };
 }
 

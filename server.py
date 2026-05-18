@@ -6,6 +6,7 @@ from disclosure_module import build_disclosure_bytes
 from payoff_module import build_payoff_letter
 from zero_balance_module import build_zero_balance_letter
 from ca_disclosure_module import build_ca_disclosure_bytes
+from ny_disclosure_module import build_ny_disclosure_bytes
 
 TEMPLATE_WEEKLY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_WEEKLY.docx')
 TEMPLATE_DAILY  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_DAILY.docx')
@@ -534,7 +535,13 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(length))
             try:
                 docx_bytes = fill_docx(data)
-                disc_bytes = build_disclosure_bytes(data)
+                # NY uses its own dedicated disclosure module (FundGate-only).
+                # All other states continue through the existing builder.
+                state = (data.get('State_of_Organization') or '').upper().strip()
+                if state == 'NY':
+                    disc_bytes = build_ny_disclosure_bytes(data)
+                else:
+                    disc_bytes = build_disclosure_bytes(data)
                 if disc_bytes:
                     docx_bytes = merge_disclosure_into_contract(docx_bytes, disc_bytes)
                 if want_pdf:
