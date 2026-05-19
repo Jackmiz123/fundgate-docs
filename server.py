@@ -24,6 +24,7 @@ FIELDS = {
     '«Agreement_Date»':             'Agreement_Date',
     '«Agreement_Date1»':            'Agreement_Date',
     '«Merchant_Legal_Name»':        'Merchant_Legal_Name',
+    '«Merchant_Display_Name»':      'Merchant_Display_Name',
     '«Merchant_DBA»':               'Merchant_DBA',
     '«Entity_Type»':                'Entity_Type',
     '«State_of_Organization»':      'State_of_Organization',
@@ -396,11 +397,23 @@ def fill_docx(data):
     # ── Fill all standard fields ─────────────────────────────────────────────────
     # Fields that must be UPPERCASE in the contract
     UPPERCASE_FIELDS = {
-        'Merchant_Legal_Name', 'Merchant_DBA', 'Entity_Type', 'State_of_Organization',
+        'Merchant_Legal_Name', 'Merchant_DBA', 'Merchant_Display_Name',
+        'Entity_Type', 'State_of_Organization',
         'Executive_Office_Address', 'Mailing_Address', 'Bank_Name',
         'Owner_Guarantor_1', 'Merchant_1', 'Authorized_Signer_Name',
         'Owner_Guarantor_2',
     }
+    # Compute the merchant display name used in select template spots
+    # (main signature, ACH top, ACH sig, addendum body, addendum sig).
+    # When DBA differs from legal name, append " DBA <name>"; otherwise just
+    # use the legal name. Comparison is case-insensitive, ignoring whitespace.
+    _legal = (data.get('Merchant_Legal_Name', '') or '').strip()
+    _dba   = (data.get('Merchant_DBA', '') or '').strip()
+    if _dba and _dba.upper() != _legal.upper():
+        data['Merchant_Display_Name'] = f'{_legal} DBA {_dba}'
+    else:
+        data['Merchant_Display_Name'] = _legal
+
     for field, key in FIELDS.items():
         val = data.get(key, '') or ''
         if key in UPPERCASE_FIELDS:
