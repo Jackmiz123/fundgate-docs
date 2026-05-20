@@ -109,6 +109,9 @@ select{text-transform:uppercase;}
   .toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
   .toggle input:checked+.toggle-slider{background:var(--accent);}
   .toggle input:checked+.toggle-slider:before{transform:translateX(20px);}
+  .fee-toggle{padding:0 12px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;min-width:44px;transition:all .15s;}
+  .fee-toggle:hover{border-color:var(--accent);color:var(--accent);}
+  .fee-toggle[data-mode="dollar"]{background:var(--accent);color:#fff;border-color:var(--accent);}
   .nav-row{display:flex;gap:10px;margin-top:20px;max-width:680px;margin-left:auto;margin-right:auto;padding:0 16px;}
   .btn{flex:1;padding:14px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;}
   .btn-back{background:var(--card);border:1px solid var(--border);color:var(--muted);}
@@ -378,8 +381,20 @@ select{text-transform:uppercase;}
       <div class="field-wrap full" id="wrap_ny_avg_rev" style="display:none;"><label>Avg Monthly Revenue (NY Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="NY_Avg_Monthly_Revenue" placeholder="75,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives APR and Estimated Term on the NY disclosure.</div></div>
       <hr class="section-divider">
       <div class="section-label">Appendix A — Fees</div>
-      <div class="field-wrap"><label>ACH Program Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="ACH_Program_Fee_Percentage" placeholder="2.5"></div></div>
-      <div class="field-wrap"><label>Origination Fee %</label><div class="input-prefix"><span>%</span><input type="text" id="Origination_Fee_Percentage" placeholder="3"></div></div>
+      <div class="field-wrap">
+        <label>ACH Program Fee <span style="font-size:11px;color:var(--muted);font-weight:normal;">(toggle % or $)</span></label>
+        <div style="display:flex;gap:6px;align-items:stretch;">
+          <button type="button" class="fee-toggle" id="ACH_Program_Fee_Toggle" data-mode="pct" onclick="toggleFeeMode('ACH_Program_Fee')">%</button>
+          <div class="input-prefix" style="flex:1;"><span id="ACH_Program_Fee_Prefix">%</span><input type="text" id="ACH_Program_Fee_Percentage" placeholder="2.5"></div>
+        </div>
+      </div>
+      <div class="field-wrap">
+        <label>Origination Fee <span style="font-size:11px;color:var(--muted);font-weight:normal;">(toggle % or $)</span></label>
+        <div style="display:flex;gap:6px;align-items:stretch;">
+          <button type="button" class="fee-toggle" id="Origination_Fee_Toggle" data-mode="pct" onclick="toggleFeeMode('Origination_Fee')">%</button>
+          <div class="input-prefix" style="flex:1;"><span id="Origination_Fee_Prefix">%</span><input type="text" id="Origination_Fee_Percentage" placeholder="3"></div>
+        </div>
+      </div>
       <hr class="section-divider">
       <div class="section-label">
         <span>Addendum — Repurchase Schedule</span>
@@ -921,6 +936,47 @@ function toggle4Tier(enabled) {
 function fv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 function formatDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
 
+// ─── Fee mode toggle (% vs $) for Appendix A fees ─────────────────────
+// User can switch between percentage and flat dollar amount for each fee.
+// The mode is persisted in the toggle button's data-mode attribute and
+// included in the form payload so it survives clone/save cycles.
+function toggleFeeMode(feePrefix) {
+  const btn = document.getElementById(feePrefix + '_Toggle');
+  const prefix = document.getElementById(feePrefix + '_Prefix');
+  if (!btn || !prefix) return;
+  const newMode = btn.getAttribute('data-mode') === 'pct' ? 'dollar' : 'pct';
+  btn.setAttribute('data-mode', newMode);
+  btn.textContent = newMode === 'pct' ? '%' : '$';
+  prefix.textContent = newMode === 'pct' ? '%' : '$';
+}
+
+function setFeeMode(feePrefix, mode) {
+  // Restore mode (used by clone). mode = 'pct' or 'dollar'.
+  const btn = document.getElementById(feePrefix + '_Toggle');
+  const prefix = document.getElementById(feePrefix + '_Prefix');
+  if (!btn || !prefix) return;
+  const m = (mode === 'dollar') ? 'dollar' : 'pct';
+  btn.setAttribute('data-mode', m);
+  btn.textContent = m === 'pct' ? '%' : '$';
+  prefix.textContent = m === 'pct' ? '%' : '$';
+}
+
+function getFeeMode(feePrefix) {
+  const btn = document.getElementById(feePrefix + '_Toggle');
+  return (btn && btn.getAttribute('data-mode')) === 'dollar' ? 'dollar' : 'pct';
+}
+
+// Format fee value based on current mode — number+'%' or '$'+formatted-number.
+function fmtFeeValue(rawVal, mode) {
+  if (!rawVal) return '';
+  const n = parseFloat(rawVal.toString().replace(/[^0-9.]/g, ''));
+  if (isNaN(n)) return rawVal;
+  if (mode === 'dollar') {
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  return n + '%';
+}
+
 // Format a number with commas and 2 decimal places
 function fmtPhone(v) {
   const d = v.replace(/\D/g,'').slice(0,10);
@@ -1031,8 +1087,10 @@ function getData() {
     dealType: DEAL_TYPE,
     Specific_Weekly_Amount: fmtMoney(fv('Specific_Weekly_Amount')),
     Specific_Daily_Amount: fmtMoney(fv('Specific_Daily_Amount')),
-    ACH_Program_Fee_Percentage: fmtPct(fv('ACH_Program_Fee_Percentage')),
-    Origination_Fee_Percentage: fmtPct(fv('Origination_Fee_Percentage')),
+    ACH_Program_Fee_Percentage: fmtFeeValue(fv('ACH_Program_Fee_Percentage'), getFeeMode('ACH_Program_Fee')),
+    Origination_Fee_Percentage: fmtFeeValue(fv('Origination_Fee_Percentage'), getFeeMode('Origination_Fee')),
+    ACH_Program_Fee_Mode: getFeeMode('ACH_Program_Fee'),
+    Origination_Fee_Mode: getFeeMode('Origination_Fee'),
     Repurchase_30_Day_Amount: fmtMoney(fv('Repurchase_30_Day_Amount')),
     Repurchase_31_60_Day_Amount: fmtMoney(fv('Repurchase_31_60_Day_Amount')),
     use_4tier_repurchase: document.getElementById('use_4tier_repurchase').checked,
@@ -1212,15 +1270,40 @@ function tryApplyClonedDeal() {
           const val = data[key];
           if (el.type === 'checkbox') {
             el.checked = !!val;
+          } else if (el.tagName === 'SELECT') {
+            // Case-insensitive matching for <select> options (e.g. Entity_Type
+            // is saved as "CORPORATION" but the option text is "Corporation").
+            const target = (val == null ? '' : String(val)).trim().toUpperCase();
+            let matched = false;
+            for (let i = 0; i < el.options.length; i++) {
+              const opt = el.options[i];
+              const optVal = (opt.value || opt.text || '').trim().toUpperCase();
+              if (optVal === target) {
+                el.selectedIndex = i;
+                matched = true;
+                break;
+              }
+            }
+            if (!matched) el.value = val == null ? '' : val;
           } else {
             el.value = val == null ? '' : val;
           }
         });
 
-        // Refresh agreement date to today (everything else is preserved from the original deal —
-        // user can edit any field to reflect new funding terms).
+        // Restore fee mode toggles (% or $) for Appendix A fees
+        if (typeof setFeeMode === 'function') {
+          setFeeMode('ACH_Program_Fee', data.ACH_Program_Fee_Mode || 'pct');
+          setFeeMode('Origination_Fee', data.Origination_Fee_Mode || 'pct');
+        }
+
+        // Refresh BOTH date fields to today (Agreement Date and Addendum Date).
+        // Everything else preserved — user edits whatever's different for the
+        // new funding terms.
+        const todayISO = new Date().toISOString().split('T')[0];
         const agreementEl = document.getElementById('Agreement_Date');
-        if (agreementEl) agreementEl.value = new Date().toISOString().split('T')[0];
+        if (agreementEl) agreementEl.value = todayISO;
+        const addendumDateEl = document.getElementById('Agreement_Date1');
+        if (addendumDateEl) addendumDateEl.value = todayISO;
 
         // Recalculate Purchased Amount and payment fields from the cloned values so
         // the form's internal calculations stay consistent with what was populated.
