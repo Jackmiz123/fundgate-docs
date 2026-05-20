@@ -18,7 +18,10 @@ import hashlib
 
 PASSWORD = os.environ.get('SITE_PASSWORD', 'admin')
 COOKIE_NAME = 'fg_session'
-COOKIE_HOURS = 12  # Server-side hard ceiling on session age (browser still drops on close)
+# Password required on EVERY visit to Past Deals — cookie expires in 5 minutes,
+# just long enough to let the page load and one API search/fetch round-trip
+# complete after login. After that, next click on Past Deals → password prompt.
+COOKIE_MINUTES = 5
 _SECRET = hashlib.sha256(('fundgate-deals-v1::' + PASSWORD).encode()).digest()
 
 
@@ -29,7 +32,7 @@ def _sign(expiry_ts):
 
 
 def make_cookie_value():
-    expiry = int(time.time()) + COOKIE_HOURS * 3600
+    expiry = int(time.time()) + COOKIE_MINUTES * 60
     return _sign(expiry)
 
 

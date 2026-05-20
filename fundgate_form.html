@@ -1087,6 +1087,9 @@ function getData() {
     dealType: DEAL_TYPE,
     Specific_Weekly_Amount: fmtMoney(fv('Specific_Weekly_Amount')),
     Specific_Daily_Amount: fmtMoney(fv('Specific_Daily_Amount')),
+    // Term of loan in payments — interpreted as weeks (weekly) or business days (daily)
+    Payment_Term_Count: fv('Payment_Term_Count') || '',
+    factor_purchased: fv('factor_purchased') || '',
     ACH_Program_Fee_Percentage: fmtFeeValue(fv('ACH_Program_Fee_Percentage'), getFeeMode('ACH_Program_Fee')),
     Origination_Fee_Percentage: fmtFeeValue(fv('Origination_Fee_Percentage'), getFeeMode('Origination_Fee')),
     ACH_Program_Fee_Mode: getFeeMode('ACH_Program_Fee'),
