@@ -1217,16 +1217,19 @@ function tryApplyClonedDeal() {
           }
         });
 
-        // Reset funding-deal-specific terms so user enters new ones for this funding round
-        ['Purchase_Price','Purchased_Amount','Specific_Weekly_Amount','Specific_Daily_Amount',
-         'Specified_Percentage','ACH_Program_Fee_Percentage','Origination_Fee_Percentage',
-         'NY_Avg_Monthly_Revenue','CA_Avg_Monthly_Revenue'].forEach(k => {
-          const el = document.getElementById(k);
-          if (el) el.value = '';
-        });
-        // Refresh agreement date to today
+        // Refresh agreement date to today (everything else is preserved from the original deal —
+        // user can edit any field to reflect new funding terms).
         const agreementEl = document.getElementById('Agreement_Date');
         if (agreementEl) agreementEl.value = new Date().toISOString().split('T')[0];
+
+        // Recalculate Purchased Amount and payment fields from the cloned values so
+        // the form's internal calculations stay consistent with what was populated.
+        if (typeof calcPurchasedAmt === 'function') {
+          try { calcPurchasedAmt(); } catch (e) {}
+        }
+        if (typeof calcPaymentFromTerm === 'function') {
+          try { calcPaymentFromTerm(); } catch (e) {}
+        }
 
         // Trigger toggles (two-signer visibility, NY field visibility, etc.)
         const twoSig = document.getElementById('twoSigners');

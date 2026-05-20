@@ -18,7 +18,7 @@ import hashlib
 
 PASSWORD = os.environ.get('SITE_PASSWORD', 'admin')
 COOKIE_NAME = 'fg_session'
-COOKIE_DAYS = 7
+COOKIE_HOURS = 12  # Server-side hard ceiling on session age (browser still drops on close)
 _SECRET = hashlib.sha256(('fundgate-deals-v1::' + PASSWORD).encode()).digest()
 
 
@@ -29,16 +29,22 @@ def _sign(expiry_ts):
 
 
 def make_cookie_value():
-    expiry = int(time.time()) + COOKIE_DAYS * 86400
+    expiry = int(time.time()) + COOKIE_HOURS * 3600
     return _sign(expiry)
 
 
 def cookie_header():
-    """Build the Set-Cookie header value for a fresh login."""
+    """Build the Set-Cookie header value for a fresh login.
+
+    Session-only cookie: no Max-Age / Expires set, so the browser drops it
+    when the tab/window closes. We still embed an HMAC-signed expiry
+    timestamp in the cookie value as a server-side hard ceiling
+    (max session = COOKIE_HOURS) in case the browser somehow keeps the
+    cookie alive longer.
+    """
     val = make_cookie_value()
     return (
         f'{COOKIE_NAME}={val}; '
-        f'Max-Age={COOKIE_DAYS * 86400}; '
         f'Path=/; '
         f'HttpOnly; '
         f'SameSite=Lax'
