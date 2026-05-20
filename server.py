@@ -530,12 +530,15 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
 
     def do_GET(self):
-        if self.path == '/':
+        # Strip query string for path matching (e.g. /?clone=1 -> /)
+        from urllib.parse import urlparse
+        path_only = urlparse(self.path).path
+        if path_only == '/':
             self.send_response(200)
             self.send_header('Content-Type','text/html; charset=utf-8')
             self.end_headers()
             self.wfile.write(open(FORM,'rb').read())
-        elif self.path == '/deals' or self.path == '/deals/':
+        elif path_only == '/deals' or path_only == '/deals/':
             # Past Deals page (HTML always served; client-side calls /deals/check-auth)
             self.send_response(200)
             self.send_header('Content-Type','text/html; charset=utf-8')
