@@ -252,8 +252,12 @@ def build_ny_disclosure_bytes(data):
     pa = _n(data, 'Purchased_Amount')
     ach_pct = _n(data, 'ACH_Program_Fee_Percentage')
     orig_pct = _n(data, 'Origination_Fee_Percentage')
-    ach_fee = round(pp * ach_pct / 100, 2)
-    orig_fee = round(pp * orig_pct / 100, 2)
+    # Support $ and % modes for fees (form sends Mode flag from v8+).
+    # When Mode == 'dollar' the input is a flat dollar amount, not a percentage.
+    ach_fee_mode  = (data.get('ACH_Program_Fee_Mode', 'pct') or 'pct').lower()
+    orig_fee_mode = (data.get('Origination_Fee_Mode', 'pct') or 'pct').lower()
+    ach_fee  = ach_pct if ach_fee_mode == 'dollar' else round(pp * ach_pct / 100, 2)
+    orig_fee = orig_pct if orig_fee_mode == 'dollar' else round(pp * orig_pct / 100, 2)
     total_fees = round(ach_fee + orig_fee, 2)
     net_to_merchant = round(pp - total_fees, 2)
     finance_charge = round(pa - pp, 2)

@@ -379,6 +379,17 @@ select{text-transform:uppercase;}
       <div class="field-wrap" id="wrap_daily_amt"><label>Specific Daily Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
       <div class="field-wrap full" id="wrap_ca_avg_rev" style="display:none;"><label>Avg Monthly Revenue (CA Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="CA_Avg_Monthly_Revenue" placeholder="120,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives Estimated Term on the disclosure.</div></div>
       <div class="field-wrap full" id="wrap_ny_avg_rev" style="display:none;"><label>Avg Monthly Revenue (NY Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="NY_Avg_Monthly_Revenue" placeholder="75,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives APR and Estimated Term on the NY disclosure.</div></div>
+      <div class="field-wrap full" id="wrap_ct_broker" style="display:none;">
+        <label>Broker Compensation (CT Disclosure)</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="CT_Broker_Pays" style="flex:0 0 110px;" onchange="updateCTBrokerAmt()">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+          <div class="input-prefix" style="flex:1;"><span>$</span><input type="text" id="CT_Broker_Amount" placeholder="3,000.00" disabled></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Required for CT deals. If yes, enter the dollar amount paid directly to the broker from the financed amount.</div>
+      </div>
       <hr class="section-divider">
       <div class="section-label">Appendix A — Fees</div>
       <div class="field-wrap">
@@ -749,6 +760,25 @@ function updateNYRevField() {
   const stateEl = document.getElementById('State_of_Organization');
   const state = (stateEl ? stateEl.value : '').toUpperCase();
   nyWrap.style.display = (state === 'NY' && !IS_FUNDKEY) ? '' : 'none';
+
+  // CT broker compensation field — same pattern as NY (FundGate-only, CT-only).
+  const ctWrap = document.getElementById('wrap_ct_broker');
+  if (ctWrap) {
+    ctWrap.style.display = (state === 'CT' && !IS_FUNDKEY) ? '' : 'none';
+  }
+}
+
+function updateCTBrokerAmt() {
+  // Enable/disable the dollar input based on the Yes/No selection.
+  const yn = document.getElementById('CT_Broker_Pays');
+  const amt = document.getElementById('CT_Broker_Amount');
+  if (!yn || !amt) return;
+  if (yn.value === 'Yes') {
+    amt.disabled = false;
+  } else {
+    amt.disabled = true;
+    amt.value = '';
+  }
 }
 
 function goBackToLanding() {
@@ -1121,6 +1151,8 @@ function getData() {
     isFundkey: IS_FUNDKEY,
     CA_Avg_Monthly_Revenue: IS_FUNDKEY ? fmtMoney(fv('CA_Avg_Monthly_Revenue')) : '',
     NY_Avg_Monthly_Revenue: fmtMoney(fv('NY_Avg_Monthly_Revenue')),
+    CT_Broker_Pays: fv('CT_Broker_Pays') || 'No',
+    CT_Broker_Amount: fmtMoney(fv('CT_Broker_Amount')),
   };
 }
 

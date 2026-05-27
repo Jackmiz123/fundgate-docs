@@ -173,8 +173,13 @@ def build_disclosure_bytes(data):
     pa       = _n(data, 'Purchased_Amount')
     orig_pct = _n(data, 'Origination_Fee_Percentage')
     ach_pct  = _n(data, 'ACH_Program_Fee_Percentage')
-    total_fee_pct = orig_pct + ach_pct
-    orig_amt = round(pp * total_fee_pct / 100, 2)
+    # Support $ and % modes for fees (form sends Mode flag from v8+).
+    # When Mode == 'dollar' the input is a flat dollar amount, not a percentage.
+    ach_mode  = (data.get('ACH_Program_Fee_Mode', 'pct') or 'pct').lower()
+    orig_mode = (data.get('Origination_Fee_Mode', 'pct') or 'pct').lower()
+    ach_amt   = ach_pct if ach_mode == 'dollar' else round(pp * ach_pct / 100, 2)
+    orig_amt_only = orig_pct if orig_mode == 'dollar' else round(pp * orig_pct / 100, 2)
+    orig_amt = round(ach_amt + orig_amt_only, 2)
     disbursed= round(pp - orig_amt, 2)
     cost     = round(pa - pp, 2)
 
