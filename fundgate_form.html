@@ -247,6 +247,16 @@ select{text-transform:uppercase;}
         <div class="lb-title">Daily Contract</div>
         <div class="lb-sub">Debits every business day</div>
       </button>
+      <button class="landing-btn" onclick="showPayoffForm('fundkey')">
+        <div class="lb-icon">💲</div>
+        <div class="lb-title">Payoff Letter</div>
+        <div class="lb-sub">Balance &amp; wire details</div>
+      </button>
+      <button class="landing-btn" onclick="showZeroBalanceForm('fundkey')">
+        <div class="lb-icon">📄</div>
+        <div class="lb-title">Zero Balance</div>
+        <div class="lb-sub">Account paid in full</div>
+      </button>
     </div>
   </div>
 
@@ -561,6 +571,7 @@ const totalSteps = 5;
 let savedData = null;
 let DEAL_TYPE = 'weekly'; // set by selectDealType() from the landing screen
 let IS_FUNDKEY = false;   // set by selectDealType() — Fundkey entity flag (drives template + branding + disclosure)
+let LETTER_ENTITY = 'fundgate'; // entity for payoff / zero balance letters; set by showPayoffForm()/showZeroBalanceForm()
 
 // Entity step navigation — first screen of the landing
 function selectEntity(entity) {
@@ -833,25 +844,29 @@ function backToDocumentType() {
   window.scrollTo({top: 0});
 }
 
-function showPayoffForm() {
+function showPayoffForm(entity) {
+  LETTER_ENTITY = (entity === 'fundkey') ? 'fundkey' : 'fundgate';
+  const label = LETTER_ENTITY === 'fundkey' ? 'FundKey' : 'FundGate';
   document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('payoffContent').style.display = '';
   document.getElementById('navRow').style.display = 'none';
   document.getElementById('formBackBar').style.display = '';
   document.getElementById('headerSubtitle').textContent = 'Payoff Letter';
-  document.title = 'FundGate — Payoff Letter';
+  document.title = label + ' — Payoff Letter';
   const today = new Date().toISOString().split('T')[0];
   const dateEl = document.getElementById('payoff_date');
   if (dateEl && !dateEl.value) dateEl.value = today;
 }
 
-function showZeroBalanceForm() {
+function showZeroBalanceForm(entity) {
+  LETTER_ENTITY = (entity === 'fundkey') ? 'fundkey' : 'fundgate';
+  const label = LETTER_ENTITY === 'fundkey' ? 'FundKey' : 'FundGate';
   document.getElementById('landingScreen').style.display = 'none';
   document.getElementById('zeroBalanceContent').style.display = '';
   document.getElementById('navRow').style.display = 'none';
   document.getElementById('formBackBar').style.display = '';
   document.getElementById('headerSubtitle').textContent = 'Zero Balance Letter';
-  document.title = 'FundGate — Zero Balance Letter';
+  document.title = label + ' — Zero Balance Letter';
   const today = new Date().toISOString().split('T')[0];
   const dateEl = document.getElementById('zb_date');
   if (dateEl && !dateEl.value) dateEl.value = today;
@@ -869,6 +884,7 @@ async function generateZeroBalance(format, btn) {
   const data = {
     zb_date: zfmtDate(zfv('zb_date')),
     zb_merchant: zfv('zb_merchant'),
+    entity: LETTER_ENTITY,
   };
   if (!data.zb_date || !data.zb_merchant) {
     errEl.textContent = '⚠ Please fill in all fields.';
@@ -883,7 +899,8 @@ async function generateZeroBalance(format, btn) {
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
     const blob = await resp.blob();
     const ext = format === 'pdf' ? 'pdf' : 'docx';
-    const name = `FundGate_ZeroBalance_${data.zb_merchant.replace(/\s+/g,'_')}_${data.zb_date.replace(/\//g,'-')}.${ext}`;
+    const prefix = LETTER_ENTITY === 'fundkey' ? 'FundKey' : 'FundGate';
+    const name = `${prefix}_ZeroBalance_${data.zb_merchant.replace(/\s+/g,'_')}_${data.zb_date.replace(/\//g,'-')}.${ext}`;
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click();
     setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
@@ -919,6 +936,7 @@ async function generatePayoff(format, btn) {
     payoff_balance: pfmtMoney(pfv('payoff_balance')),
     payoff_wire_amount: pfmtMoney(pfv('payoff_wire_amount')),
     payoff_discount_warning: document.getElementById('payoff_discount_warning').checked,
+    entity: LETTER_ENTITY,
   };
 
   if (!data.payoff_date || !data.payoff_merchant || !data.payoff_balance || !data.payoff_wire_amount) {
@@ -939,7 +957,8 @@ async function generatePayoff(format, btn) {
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
     const blob = await resp.blob();
     const ext = format === 'pdf' ? 'pdf' : 'docx';
-    const name = `FundGate_Payoff_${data.payoff_merchant.replace(/\s+/g,'_')}_${data.payoff_date.replace(/\//g,'-')}.${ext}`;
+    const prefix = LETTER_ENTITY === 'fundkey' ? 'FundKey' : 'FundGate';
+    const name = `${prefix}_Payoff_${data.payoff_merchant.replace(/\s+/g,'_')}_${data.payoff_date.replace(/\//g,'-')}.${ext}`;
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = name;

@@ -241,11 +241,11 @@ def fill_docx(data):
     )
 
     # ── Fundkey-only: swap the FundGate email line in the consumer notice ────
-    # Fundkey email = admin@fundkey.com
+    # Fundkey email = admin@fundkeyllc.com
     if is_fundkey:
         doc = doc.replace(
             '<w:t>Email: admin@fundgatellc.com</w:t>',
-            '<w:t>Email: admin@fundkey.com</w:t>'
+            '<w:t>Email: admin@fundkeyllc.com</w:t>'
         )
 
     # ── Repurchase mid-block (3-tier vs 4-tier) ────────────────────────────
@@ -705,14 +705,15 @@ class Handler(BaseHTTPRequestHandler):
                     raise Exception('Missing required payoff letter fields')
                 merchant = re.sub(r'\s+', '_', data.get('payoff_merchant', 'Payoff'))
                 date_str = (data.get('payoff_date', '') or '').replace('/', '_')
+                prefix = 'FundKey' if (data.get('entity') or '').strip().lower() == 'fundkey' else 'FundGate'
                 if want_pdf:
                     out_bytes = docx_to_pdf(docx_bytes)
                     mime = 'application/pdf'
-                    fname = f'FundGate_Payoff_{merchant}_{date_str}.pdf'
+                    fname = f'{prefix}_Payoff_{merchant}_{date_str}.pdf'
                 else:
                     out_bytes = docx_bytes
                     mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    fname = f'FundGate_Payoff_{merchant}_{date_str}.docx'
+                    fname = f'{prefix}_Payoff_{merchant}_{date_str}.docx'
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
                 self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')
@@ -736,14 +737,15 @@ class Handler(BaseHTTPRequestHandler):
                     raise Exception('Missing required zero balance letter fields')
                 merchant = re.sub(r'\s+', '_', data.get('zb_merchant', 'ZeroBalance'))
                 date_str = (data.get('zb_date', '') or '').replace('/', '_')
+                prefix = 'FundKey' if (data.get('entity') or '').strip().lower() == 'fundkey' else 'FundGate'
                 if want_pdf:
                     out_bytes = docx_to_pdf(docx_bytes)
                     mime = 'application/pdf'
-                    fname = f'FundGate_ZeroBalance_{merchant}_{date_str}.pdf'
+                    fname = f'{prefix}_ZeroBalance_{merchant}_{date_str}.pdf'
                 else:
                     out_bytes = docx_bytes
                     mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    fname = f'FundGate_ZeroBalance_{merchant}_{date_str}.docx'
+                    fname = f'{prefix}_ZeroBalance_{merchant}_{date_str}.docx'
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
                 self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')

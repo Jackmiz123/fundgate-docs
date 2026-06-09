@@ -5,12 +5,33 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         'FUNDGATE_TEMPLATE_WEEKLY.docx')
+_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Per-entity config. FundGate values match the original hard-coded letter, so
+# FundGate output is unchanged. FundKey swaps logo, name, email, and phone.
+ENTITY_CFG = {
+    'fundgate': {
+        'template': 'FUNDGATE_TEMPLATE_WEEKLY.docx',
+        'name': 'FundGate LLC',
+        'email': 'admin@fundgatellc.com',
+        'phone': '929-256-7464',
+    },
+    'fundkey': {
+        'template': 'FUNDKEY_TEMPLATE_WEEKLY.docx',
+        'name': 'FundKey LLC',
+        'email': 'admin@fundkeyllc.com',
+        'phone': '',
+    },
+}
 
 
-def _extract_logo_bytes():
-    with zipfile.ZipFile(LOGO_PATH) as z:
+def _get_cfg(data):
+    entity = (data.get('entity') or 'fundgate').strip().lower()
+    return ENTITY_CFG.get(entity, ENTITY_CFG['fundgate'])
+
+
+def _extract_logo_bytes(template):
+    with zipfile.ZipFile(os.path.join(_DIR, template)) as z:
         return z.read('word/media/image1.jpeg')
 
 
@@ -26,6 +47,8 @@ def build_zero_balance_letter(data):
 
     if not all([date_str, merchant]):
         return None
+
+    cfg = _get_cfg(data)
 
     # Format date: 04/15/2026 -> April 15, 2026
     display_date = date_str
@@ -55,7 +78,7 @@ def build_zero_balance_letter(data):
         return r
 
     # ── Logo ──
-    logo_bytes = _extract_logo_bytes()
+    logo_bytes = _extract_logo_bytes(cfg['template'])
     logo_stream = io.BytesIO(logo_bytes)
     logo_para = doc.add_paragraph()
     logo_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -109,7 +132,10 @@ def build_zero_balance_letter(data):
     close1.paragraph_format.space_after = Pt(12)
     _add_run(close1, 'Sincerely,')
 
-    for line in ['Accounts Receivable', 'FundGate LLC', 'admin@fundgatellc.com', '929-256-7464']:
+    closing_lines = ['Accounts Receivable', cfg['name'], cfg['email']]
+    if cfg.get('phone'):
+        closing_lines.append(cfg['phone'])
+    for line in closing_lines:
         cp = doc.add_paragraph()
         cp.paragraph_format.space_before = Pt(0)
         cp.paragraph_format.space_after = Pt(0)

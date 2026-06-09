@@ -161,7 +161,7 @@ def build_disclosure_bytes(data):
     # the Fundkey-branded contract it'll be merged into.
     is_fundkey    = bool(data.get('isFundkey', False)) or bool(data.get('isCA', False))
     provider_name  = 'Fundkey LLC' if is_fundkey else 'FundGate LLC'
-    provider_email = 'admin@fundkey.com' if is_fundkey else 'admin@fundgatellc.com'
+    provider_email = 'admin@fundkeyllc.com' if is_fundkey else 'admin@fundgatellc.com'
 
     two_signers   = data.get('twoSigners', False)
     merchant_name = (data.get('Merchant_Legal_Name', '') or '').upper()

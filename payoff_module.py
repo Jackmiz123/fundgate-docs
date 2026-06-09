@@ -5,14 +5,35 @@ from docx import Document
 from docx.shared import Pt, Inches, Emu, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         'FUNDGATE_TEMPLATE_WEEKLY.docx')
+_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Per-entity letterhead / banking / signature config.
+# FundGate values are identical to the original hard-coded letter, so FundGate
+# output is unchanged. FundKey swaps logo, entity name, account #, and email.
+ENTITY_CFG = {
+    'fundgate': {
+        'template': 'FUNDGATE_TEMPLATE_WEEKLY.docx',
+        'name': 'FundGate LLC',
+        'email': 'admin@fundgatellc.com',
+        'acct': '210058947',
+    },
+    'fundkey': {
+        'template': 'FUNDKEY_TEMPLATE_WEEKLY.docx',
+        'name': 'FundKey LLC',
+        'email': 'admin@fundkeyllc.com',
+        'acct': '110041639',
+    },
+}
 
 
-def _extract_logo_bytes():
-    """Pull the FundGate logo image from the weekly template."""
-    with zipfile.ZipFile(LOGO_PATH) as z:
-        # image1.jpeg is the FundGate logo
+def _get_cfg(data):
+    entity = (data.get('entity') or 'fundgate').strip().lower()
+    return ENTITY_CFG.get(entity, ENTITY_CFG['fundgate'])
+
+
+def _extract_logo_bytes(template):
+    """Pull the entity logo image (image1.jpeg) from its weekly template."""
+    with zipfile.ZipFile(os.path.join(_DIR, template)) as z:
         return z.read('word/media/image1.jpeg')
 
 
@@ -33,6 +54,8 @@ def build_payoff_letter(data):
 
     if not all([date_str, merchant, balance, wire_amt]):
         return None
+
+    cfg = _get_cfg(data)
 
     # Format date nicely: 04/16/2026 -> April 16, 2026
     display_date = date_str
@@ -55,7 +78,7 @@ def build_payoff_letter(data):
     section.right_margin = Inches(1.0)
 
     # ── Logo ──
-    logo_bytes = _extract_logo_bytes()
+    logo_bytes = _extract_logo_bytes(cfg['template'])
     logo_stream = io.BytesIO(logo_bytes)
     logo_para = doc.add_paragraph()
     logo_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -139,11 +162,11 @@ def build_payoff_letter(data):
     # ── Bank details (indented, bold) ──
     bank_lines = [
         'Optimum Bank',
-        'FundGate LLC',
+        cfg['name'],
         '2929 E Commercial Boulevard',
         'Fort Lauderdale, FL 33308',
         'ABA # 067015096',
-        'Acct# 210058947',
+        'Acct# ' + cfg['acct'],
     ]
     for line in bank_lines:
         bp = doc.add_paragraph()
@@ -174,7 +197,7 @@ def build_payoff_letter(data):
     # ── Balance adjustments paragraph ──
     p3 = _add_body_para(doc)
     _add_run(p3, 'Any balance adjustments or amounts which are currently being processed and collected '
-                 'by FundGate LLC after the remitted payoff balance has cleared our account will be '
+                 'by ' + cfg['name'] + ' after the remitted payoff balance has cleared our account will be '
                  'immediately returned to your designated operating account.')
 
     # ── Closing ──
@@ -183,7 +206,7 @@ def build_payoff_letter(data):
     close1.paragraph_format.space_after = Pt(12)
     _add_run(close1, 'Sincerely,')
 
-    for line in ['Accounts Receivable', 'FundGate LLC', 'admin@fundgatellc.com']:
+    for line in ['Accounts Receivable', cfg['name'], cfg['email']]:
         cp = doc.add_paragraph()
         cp.paragraph_format.space_before = Pt(0)
         cp.paragraph_format.space_after = Pt(0)
