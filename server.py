@@ -140,9 +140,8 @@ def fill_docx(data):
     if two_signers:
         def fill_s2_block(block_xml):
             for placeholder, key in FIELDS_S2.items():
-                val = data.get(key, '') or ''
-                if key in ('Owner_Guarantor_2', 'Merchant_Legal_Name', 'Merchant_DBA'):
-                    val = val.upper()
+                # Rule: every signer-2 field prints UPPERCASE on the contract.
+                val = (data.get(key, '') or '').upper()
                 block_xml = block_xml.replace(placeholder, safe(val))
             # Patch rId10 references (Sign Here arrow) for templates where
             # image2.png maps to a different rId (e.g. daily uses rId9).
@@ -396,14 +395,10 @@ def fill_docx(data):
         doc = doc.replace(SPACER, '')
 
     # ── Fill all standard fields ─────────────────────────────────────────────────
-    # Fields that must be UPPERCASE in the contract
-    UPPERCASE_FIELDS = {
-        'Merchant_Legal_Name', 'Merchant_DBA', 'Merchant_Display_Name',
-        'Entity_Type', 'State_of_Organization',
-        'Executive_Office_Address', 'Mailing_Address', 'Bank_Name',
-        'Owner_Guarantor_1', 'Merchant_1', 'Authorized_Signer_Name',
-        'Owner_Guarantor_2',
-    }
+    # Rule: EVERY field prints UPPERCASE on the contract. Uppercasing is a
+    # no-op on numeric/money/percent/date-slash values, so this only changes
+    # the text fields (names, addresses, entity type, frequency, DL, etc.)
+    # and guarantees no field is ever missed.
     # Compute the merchant display name used in select template spots
     # (main signature, ACH top, ACH sig, addendum body, addendum sig).
     # When DBA differs from legal name, append " DBA <name>"; otherwise just
@@ -416,9 +411,7 @@ def fill_docx(data):
         data['Merchant_Display_Name'] = _legal
 
     for field, key in FIELDS.items():
-        val = data.get(key, '') or ''
-        if key in UPPERCASE_FIELDS:
-            val = val.upper()
+        val = (data.get(key, '') or '').upper()
         val = safe(val)
         doc = doc.replace(field, val)
 
