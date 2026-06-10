@@ -95,7 +95,7 @@ def build_nostate_disclosure_bytes(data):
         _para([_run('Provider', bold=True)], after=40),
         _para([_run(f'Name: {provider_name}', bold=True)], after=40),
         _para([_run('Address: 1202 Avenue U, Suite 1175, Brooklyn NY 11229', bold=True)], after=40),
-        _para([_run('Phone Number: 929-256-7464', bold=True)], after=40),
+        _para([_run('Phone Number: 631-772-9020', bold=True)], after=40),
         _para([_run(f'E-mail Address: {provider_email}', bold=True)], after=40),
     ]
     desc_para = _para(

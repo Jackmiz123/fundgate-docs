@@ -14,7 +14,7 @@ ENTITY_CFG = {
         'template': 'FUNDGATE_TEMPLATE_WEEKLY.docx',
         'name': 'FundGate LLC',
         'email': 'admin@fundgatellc.com',
-        'phone': '929-256-7464',
+        'phone': '631-772-9020',
     },
     'fundkey': {
         'template': 'FUNDKEY_TEMPLATE_WEEKLY.docx',

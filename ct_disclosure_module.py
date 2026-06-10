@@ -172,7 +172,7 @@ def _table(rows_xml, total_width_dxa=10800):
 # when Jack provides the live FundGate phone (currently placeholder).
 PROVIDER_NAME    = 'FundGate LLC'
 PROVIDER_ADDR    = '1202 Avenue U, Suite 1175, Brooklyn, NY 11229'
-PROVIDER_PHONE   = '929-256-7464'
+PROVIDER_PHONE   = '631-772-9020'
 PROVIDER_EMAIL   = 'admin@fundgatellc.com'
 
 

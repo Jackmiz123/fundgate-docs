@@ -220,7 +220,7 @@ def fill_docx(data):
         '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/><w:jc w:val="both"/></w:pPr>'
         '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>If you ever have questions about your account, experience payment issues, or need clarification on anything, you can contact us directly. There is no need to involve any outside company:</w:t></w:r></w:p>'
         '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="40" w:after="40"/><w:ind w:left="720"/></w:pPr>'
-        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Phone: 929-256-7464</w:t></w:r></w:p>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Phone: 631-772-9020</w:t></w:r></w:p>'
         '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/><w:ind w:left="720"/></w:pPr>'
         '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Email: admin@fundgatellc.com</w:t></w:r></w:p>'
         '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="200" w:after="80"/></w:pPr>'
