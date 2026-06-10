@@ -3,6 +3,7 @@
 import http.server, json, zipfile, re, os, subprocess, tempfile, shutil, io
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from disclosure_module import build_disclosure_bytes
+from cfd_nostate_module import build_nostate_disclosure_bytes
 from payoff_module import build_payoff_letter
 from zero_balance_module import build_zero_balance_letter
 from ca_disclosure_module import build_ca_disclosure_bytes
@@ -598,7 +599,12 @@ class Handler(BaseHTTPRequestHandler):
                 # NY and CT each use their own dedicated disclosure module (FundGate-only).
                 # All other states continue through the existing builder.
                 state = (data.get('State_of_Organization') or '').upper().strip()
-                if state == 'NY':
+                if data.get('includeNoStateCFD'):
+                    # Refinance / net-amount no-state Commercial Financing
+                    # Disclosure. Explicit toggle; takes precedence over the
+                    # state-based auto-attach so only one disclosure renders.
+                    disc_bytes = build_nostate_disclosure_bytes(data)
+                elif state == 'NY':
                     disc_bytes = build_ny_disclosure_bytes(data)
                 elif state == 'CT':
                     disc_bytes = build_ct_disclosure_bytes(data)
@@ -655,7 +661,9 @@ class Handler(BaseHTTPRequestHandler):
                 docx_bytes = fill_docx(data)
                 # Pick disclosure by state
                 state = (data.get('State_of_Organization') or '').upper().strip()
-                if state == 'CA':
+                if data.get('includeNoStateCFD'):
+                    disc_bytes = build_nostate_disclosure_bytes(data)
+                elif state == 'CA':
                     disc_bytes = build_ca_disclosure_bytes(data)
                 else:
                     disc_bytes = build_disclosure_bytes(data)
