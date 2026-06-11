@@ -282,6 +282,9 @@ def build_ca_disclosure_bytes(data):
     orig_fee = orig_pct if orig_fee_mode == 'dollar' else round(pp * orig_pct / 100, 2)
     total_fees = round(ach_fee + orig_fee, 2)
     net_to_merchant = round(pp - total_fees, 2)
+    prior_balance = _n(data, 'Prior_Balance_Amount')
+    third_party   = _n(data, 'Third_Party_Amount')
+    direct_to_you = round(net_to_merchant - prior_balance - third_party, 2)
     finance_charge = round(pa - pp, 2)
 
     spec_pct_raw = data.get('Specified_Percentage', '0')
@@ -330,6 +333,9 @@ def build_ca_disclosure_bytes(data):
     pp_fmt = _fmt_currency(pp)
     pa_fmt = _fmt_currency(pa)
     net_fmt = _fmt_currency(net_to_merchant)
+    direct_fmt = _fmt_currency(direct_to_you)
+    prior_fmt = _fmt_currency(prior_balance)
+    third_fmt = _fmt_currency(third_party)
     fc_fmt = _fmt_currency(finance_charge)
     em_fmt = _fmt_currency(est_monthly)
     pmt_fmt = _fmt_currency(pmt)
@@ -422,7 +428,7 @@ def build_ca_disclosure_bytes(data):
         cell_value(pp_fmt),
         cell_desc([
             f'This is how much funding **{provider}** will provide.',
-            f'Due to deductions or payments to others, the total funds that will be provided to you directly is **{net_fmt}**.',
+            f'Due to deductions or payments to others, the total funds that will be provided to you directly is **{direct_fmt}**.',
             'This amount may increase or decrease based on your final balances with others or any changes to deductions.',
         ]),
     ])
@@ -593,16 +599,16 @@ def build_ca_disclosure_bytes(data):
 
     # Build itemization following Angry Petes layout precisely
     item_rows = [
-        item_row('1. Amount Given Directly to You', net_fmt),
+        item_row('1. Amount Given Directly to You', direct_fmt),
         item_row('2. ACH Program Fee', ach_fee_fmt),
         item_row('3. Origination Fee', orig_fee_fmt),
         item_row('4. Amount paid on your behalf to third parties (5a + 5b + 5c)',
-                 _fmt_currency(0)),
-        item_row('5a.', _fmt_currency(0), indent=True),
+                 third_fmt),
+        item_row('5a.', third_fmt, indent=True),
         item_row('5b.', _fmt_currency(0), indent=True),
         item_row('5c.', _fmt_currency(0), indent=True),
         item_row(f'5. Amount Paid on Your Account with {provider}',
-                 _fmt_currency(0)),
+                 prior_fmt),
         item_row('6. Amount Provided to You or on Your Behalf', pp_fmt),
         item_row('7. Prepaid Finance Charges: ACH Program Fee + Origination Fee',
                  fees_fmt),

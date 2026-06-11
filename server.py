@@ -603,17 +603,18 @@ class Handler(BaseHTTPRequestHandler):
                 # NY and CT each use their own dedicated disclosure module (FundGate-only).
                 # All other states continue through the existing builder.
                 state = (data.get('State_of_Organization') or '').upper().strip()
-                if data.get('includeNoStateCFD'):
-                    # Refinance / net-amount no-state Commercial Financing
-                    # Disclosure. Explicit toggle; takes precedence over the
-                    # state-based auto-attach so only one disclosure renders.
-                    disc_bytes = build_nostate_disclosure_bytes(data)
-                elif state == 'NY':
+                if state == 'NY':
                     disc_bytes = build_ny_disclosure_bytes(data)
                 elif state == 'CT':
                     disc_bytes = build_ct_disclosure_bytes(data)
                 else:
                     disc_bytes = build_disclosure_bytes(data)
+                # No-state Commercial Financing Disclosure is used ONLY when the
+                # deal's state has no CFDL disclosure of its own; it never
+                # replaces a state disclosure. The Prior_Balance_Amount field
+                # flows into whichever disclosure renders.
+                if disc_bytes is None and data.get('includeNoStateCFD'):
+                    disc_bytes = build_nostate_disclosure_bytes(data)
                 if disc_bytes:
                     docx_bytes = merge_disclosure_into_contract(docx_bytes, disc_bytes)
                 if want_pdf:
@@ -665,12 +666,13 @@ class Handler(BaseHTTPRequestHandler):
                 docx_bytes = fill_docx(data)
                 # Pick disclosure by state
                 state = (data.get('State_of_Organization') or '').upper().strip()
-                if data.get('includeNoStateCFD'):
-                    disc_bytes = build_nostate_disclosure_bytes(data)
-                elif state == 'CA':
+                if state == 'CA':
                     disc_bytes = build_ca_disclosure_bytes(data)
                 else:
                     disc_bytes = build_disclosure_bytes(data)
+                # No-state CFD only when the state has no disclosure of its own.
+                if disc_bytes is None and data.get('includeNoStateCFD'):
+                    disc_bytes = build_nostate_disclosure_bytes(data)
                 if disc_bytes:
                     docx_bytes = merge_disclosure_into_contract(docx_bytes, disc_bytes)
                 if want_pdf:
