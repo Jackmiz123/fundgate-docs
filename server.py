@@ -12,6 +12,17 @@ from ct_disclosure_module import build_ct_disclosure_bytes
 import db_module
 import auth_module
 
+# Characters that are ILLEGAL in XML 1.0 / OOXML (C0 control chars except
+# tab, newline, carriage return). A stray one of these in any field value
+# (commonly from copy-pasting a name or address out of a PDF/email) makes
+# document.xml not well-formed, so Word reports "problems with the contents"
+# even though the file downloads. Stripping them is a no-op for clean data
+# and never affects legitimate contract text.
+_ILLEGAL_XML_CHARS = re.compile(r'[\x00-\x08\x0B\x0C\x0E-\x1F]')
+
+def strip_illegal_xml_chars(s):
+    return _ILLEGAL_XML_CHARS.sub('', s) if s else s
+
 TEMPLATE_WEEKLY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_WEEKLY.docx')
 TEMPLATE_DAILY  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_DAILY.docx')
 # CA-only templates (Fundkey LLC branding) — used ONLY by /generate/ca routes
@@ -100,6 +111,9 @@ def merge_disclosure_into_contract(contract_bytes, disclosure_bytes):
     contract_xml = contract_xml.replace('<w:body>', '<w:body>' + disc_body, 1)
     contract_xml = contract_xml.replace('<w:pgNumType w:start="1"/>', '<w:pgNumType w:start="2"/>', 1)
 
+    # Final safety net: ensure the merged document.xml has no XML-illegal
+    # control characters (covers both contract and disclosure-inserted text).
+    contract_xml = strip_illegal_xml_chars(contract_xml)
     contract_files['word/document.xml'] = contract_xml.encode('utf-8')
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zout:
@@ -125,7 +139,7 @@ def fill_docx(data):
     two_signers = data.get('twoSigners', False)
 
     def safe(val):
-        return (val or '').replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
+        return strip_illegal_xml_chars(val or '').replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
     # Determine the rId that points to the Sign Here arrow image (media/image2.png)
     # in the current template — s2_block files reference rId10 (weekly's mapping) by
