@@ -141,6 +141,28 @@ def fill_docx(data):
     def safe(val):
         return strip_illegal_xml_chars(val or '').replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
+    # On a 2-signer deal, the addendum intro line must name BOTH guarantors.
+    # Target only the intro: the «Owner_Guarantor_1» placeholder immediately
+    # before the word "Guarantors" (which appears only in the addendum intro).
+    # All other placeholder spots are left to the normal field replacement
+    # below, so single-signer output is unchanged. Fails safe (no edit) if the
+    # expected text isn't found.
+    if two_signers and (data.get('Owner_Guarantor_2') or '').strip():
+        _g1 = safe((data.get('Owner_Guarantor_1') or '').upper())
+        _g2 = safe((data.get('Owner_Guarantor_2') or '').upper())
+        _gpos = doc.find('Guarantors')
+        if _gpos != -1:
+            _ppos = doc.rfind('<w:t>«Owner_Guarantor_1»</w:t>', 0, _gpos)
+            if _ppos != -1:
+                _rs = doc.rfind('<w:r ', 0, _ppos)
+                _re = doc.find('</w:r>', _ppos) + len('</w:r>')
+                _run = doc[_rs:_re]
+                _both = (_run.replace('«Owner_Guarantor_1»', _g1)
+                         + '<w:r><w:rPr><w:color w:val="010202"/></w:rPr>'
+                           '<w:t xml:space="preserve"> and </w:t></w:r>'
+                         + _run.replace('«Owner_Guarantor_1»', _g2))
+                doc = doc[:_rs] + _both + doc[_re:]
+
     # Determine the rId that points to the Sign Here arrow image (media/image2.png)
     # in the current template — s2_block files reference rId10 (weekly's mapping) by
     # default, so daily needs a rewrite since daily maps image2.png to rId9.
