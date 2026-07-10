@@ -9,6 +9,7 @@ from zero_balance_module import build_zero_balance_letter
 from ca_disclosure_module import build_ca_disclosure_bytes
 from ny_disclosure_module import build_ny_disclosure_bytes
 from ct_disclosure_module import build_ct_disclosure_bytes
+from ut_disclosure_module import build_ut_disclosure_bytes
 import db_module
 import auth_module
 
@@ -636,13 +637,15 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(length))
             try:
                 docx_bytes = fill_docx(data)
-                # NY and CT each use their own dedicated disclosure module (FundGate-only).
+                # NY, CT and UT each use their own dedicated disclosure module (FundGate-only).
                 # All other states continue through the existing builder.
                 state = (data.get('State_of_Organization') or '').upper().strip()
                 if state == 'NY':
                     disc_bytes = build_ny_disclosure_bytes(data)
                 elif state == 'CT':
                     disc_bytes = build_ct_disclosure_bytes(data)
+                elif state == 'UT':
+                    disc_bytes = build_ut_disclosure_bytes(data)
                 else:
                     disc_bytes = build_disclosure_bytes(data)
                 # No-state Commercial Financing Disclosure is used ONLY when the

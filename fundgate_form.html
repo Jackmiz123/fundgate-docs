@@ -400,6 +400,14 @@ select{text-transform:uppercase;}
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:4px;">Required for CT deals. If yes, enter the dollar amount paid directly to the broker from the financed amount.</div>
       </div>
+      <div class="field-wrap full" id="wrap_ut_broker" style="display:none;">
+        <label>Broker Compensation (UT Disclosure)</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="text" id="UT_Broker_Name" placeholder="Broker name" style="flex:1;">
+          <div class="input-prefix" style="flex:0 0 180px;"><span>$</span><input type="text" id="UT_Broker_Amount" placeholder="1,500.00"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Required for UT deals. Utah requires the broker name and the amount paid to the broker, even when the provider pays the commission. Leave blank if there is no broker.</div>
+      </div>
       <hr class="section-divider">
       <div class="section-label">Appendix A — Fees</div>
       <div class="field-wrap">
@@ -787,6 +795,12 @@ function updateNYRevField() {
   const ctWrap = document.getElementById('wrap_ct_broker');
   if (ctWrap) {
     ctWrap.style.display = (state === 'CT' && !IS_FUNDKEY) ? '' : 'none';
+  }
+
+  // UT broker compensation fields — FundGate-only, UT-only.
+  const utWrap = document.getElementById('wrap_ut_broker');
+  if (utWrap) {
+    utWrap.style.display = (state === 'UT' && !IS_FUNDKEY) ? '' : 'none';
   }
 }
 
@@ -1190,6 +1204,8 @@ function getData() {
     NY_Avg_Monthly_Revenue: fmtMoney(fv('NY_Avg_Monthly_Revenue')),
     CT_Broker_Pays: fv('CT_Broker_Pays') || 'No',
     CT_Broker_Amount: fmtMoney(fv('CT_Broker_Amount')),
+    UT_Broker_Name: fv('UT_Broker_Name') || '',
+    UT_Broker_Amount: fmtMoney(fv('UT_Broker_Amount')),
   };
 }
 
