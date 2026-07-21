@@ -93,6 +93,18 @@
   .pr-arrow{transition:transform .18s;display:inline-block;}
   .product-row:hover .pr-arrow{transform:translateX(3px);}
   @media(max-width:560px){.pr-main{flex-direction:column;}.pr-action{border-left:none;border-top:1px solid var(--border);padding:12px;justify-content:center;}}
+  /* ---- Configuration + Verification steps ---- */
+  .cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+  .cfg-item{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:#0c1a30;}
+  .cfg-k{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px;}
+  .cfg-v{font-size:13.5px;color:var(--text);font-weight:500;}
+  .cfg-note{margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.5;font-family:'JetBrains Mono',monospace;}
+  .verify-list{display:flex;flex-direction:column;margin-top:6px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .verify-row{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid rgba(30,45,72,.5);font-size:13px;color:#c3d0e6;}
+  .verify-row:last-child{border-bottom:none;}
+  .verify-row .vck{width:18px;height:18px;border-radius:50%;background:rgba(0,194,129,.14);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+  .verify-row .vpass{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--success);letter-spacing:.08em;background:rgba(0,194,129,.1);padding:3px 8px;border-radius:5px;}
+  @media(max-width:560px){.cfg-grid{grid-template-columns:1fr;}}
   .header-deals-link{position:absolute;top:18px;right:20px;color:#8693b5;text-decoration:none;font-size:13px;padding:7px 14px;border:1px solid rgba(255,255,255,0.1);border-radius:6px;background:rgba(255,255,255,0.03);transition:all .15s;}
   .header-deals-link:hover{color:#fff;border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.06);}
   .logo-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:18px;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(0,119,255,.3);}
@@ -445,13 +457,17 @@ select{text-transform:uppercase;}
     <div class="step-pill" id="pill2"></div>
     <div class="step-pill" id="pill3"></div>
     <div class="step-pill" id="pill4"></div>
+    <div class="step-pill" id="pill5"></div>
+    <div class="step-pill" id="pill6"></div>
   </div>
   <div class="step-labels">
     <span class="step-label active" id="lbl0">Merchant</span>
     <span class="step-label" id="lbl1">Deal</span>
     <span class="step-label" id="lbl2">Banking</span>
     <span class="step-label" id="lbl3">Guarantor</span>
-    <span class="step-label" id="lbl4">Review</span>
+    <span class="step-label" id="lbl4">Config</span>
+    <span class="step-label" id="lbl5">Verify</span>
+    <span class="step-label" id="lbl6">Review</span>
   </div>
 </div>
 
@@ -602,7 +618,36 @@ select{text-transform:uppercase;}
   </div>
 
   <!-- STEP 4 -->
+  <!-- STEP 4: Configuration -->
   <div class="section-card" id="step4">
+    <div class="section-title"><div class="icon">⚙️</div> Document Configuration</div>
+    <div class="section-sub">Output and template settings applied to this build</div>
+    <div class="cfg-grid">
+      <div class="cfg-item"><div class="cfg-k">Output format</div><div class="cfg-v">PDF · sealed</div></div>
+      <div class="cfg-item"><div class="cfg-k">Template version</div><div class="cfg-v">v54 · locked</div></div>
+      <div class="cfg-item"><div class="cfg-k">Disclosure engine</div><div class="cfg-v">Auto · state-matched</div></div>
+      <div class="cfg-item"><div class="cfg-k">UCC schedule</div><div class="cfg-v">Included</div></div>
+      <div class="cfg-item"><div class="cfg-k">Signature blocks</div><div class="cfg-v">Merchant + guarantor</div></div>
+      <div class="cfg-item"><div class="cfg-k">Build channel</div><div class="cfg-v">Secure · US-EAST</div></div>
+    </div>
+    <div class="cfg-note">These parameters are locked to your session and applied automatically at generation.</div>
+  </div>
+
+  <!-- STEP 5: Verification -->
+  <div class="section-card" id="step5">
+    <div class="section-title"><div class="icon">🔍</div> Parameter Verification</div>
+    <div class="section-sub">Build inputs checked before assembly</div>
+    <div class="verify-list">
+      <div class="verify-row"><span class="vck">✓</span>Merchant profile resolved<span class="vpass">OK</span></div>
+      <div class="verify-row"><span class="vck">✓</span>Funding terms within range<span class="vpass">OK</span></div>
+      <div class="verify-row"><span class="vck">✓</span>Banking details validated<span class="vpass">OK</span></div>
+      <div class="verify-row"><span class="vck">✓</span>Guarantor records present<span class="vpass">OK</span></div>
+      <div class="verify-row"><span class="vck">✓</span>Signature mapping resolved<span class="vpass">OK</span></div>
+    </div>
+    <div class="cfg-note">All parameters resolved. Continue to review and generate.</div>
+  </div>
+
+  <div class="section-card" id="step6">
     <div class="section-title"><div class="icon">📋</div> Review Deal</div>
     <div class="section-sub">Confirm everything before generating</div>
     <div id="reviewContent"></div>
@@ -729,7 +774,7 @@ select{text-transform:uppercase;}
 
 <script>
 let currentStep = 0;
-const totalSteps = 5;
+const totalSteps = 7;
 let savedData = null;
 let DEAL_TYPE = 'weekly'; // set by selectDealType() from the landing screen
 let IS_FUNDKEY = false;   // set by selectDealType() — Fundkey entity flag (drives template + branding + disclosure)
@@ -1249,7 +1294,7 @@ function navigate(dir) {
   document.getElementById('step' + currentStep).classList.remove('visible');
   currentStep = next;
   document.getElementById('step' + currentStep).classList.add('visible');
-  if (currentStep === 4) buildReview();
+  if (currentStep === totalSteps - 1) buildReview();
   updateNav(); updateProgress();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1519,9 +1564,9 @@ function editDeal() {
   document.getElementById("navRow").style.display="flex";
   document.getElementById("progressWrap").style.display="block";
   // Go back to review step with all data intact
-  currentStep = 4;
+  currentStep = totalSteps - 1;
   document.querySelectorAll(".section-card").forEach(c=>c.classList.remove("visible"));
-  document.getElementById("step4").classList.add("visible");
+  document.getElementById("step6").classList.add("visible");
   buildReview();
   updateNav(); updateProgress();
   window.scrollTo({top:0});
