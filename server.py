@@ -673,6 +673,10 @@ class Handler(BaseHTTPRequestHandler):
         if BROKER_MODE and not auth_module.is_valid_cookie(self.headers.get('Cookie', '')):
             self.send_response(401); self.send_header('Content-Type','application/json'); self.end_headers()
             self.wfile.write(b'{"error":"unauthorized"}'); return
+        # Broker builds only generate contracts — payoff / zero-balance letters are blocked.
+        if BROKER_MODE and (self.path.startswith('/generate/payoff') or self.path.startswith('/generate/zerobalance')):
+            self.send_response(404); self.send_header('Content-Type','application/json'); self.end_headers()
+            self.wfile.write(b'{"error":"not available"}'); return
         if self.path in ('/generate', '/generate/pdf'):
             want_pdf = True if BROKER_MODE else self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))

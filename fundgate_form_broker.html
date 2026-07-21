@@ -74,6 +74,25 @@
   .comp-row:last-child{border-bottom:none;}
   .comp-row .ck{width:17px;height:17px;border-radius:50%;background:rgba(0,194,129,.14);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
   .comp-row .pass{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--success);letter-spacing:.08em;background:rgba(0,194,129,.1);padding:2px 7px;border-radius:5px;}
+  /* ---- Contract assembly configurator (broker doc selection) ---- */
+  .config-head{display:flex;align-items:center;justify-content:space-between;max-width:640px;margin:0 auto 14px;padding:0 2px;}
+  .config-head .ch-l{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#c3d0e6;letter-spacing:.03em;}
+  .config-head .ch-l .ch-ico{color:var(--accent);font-size:15px;}
+  .config-head .ch-r{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.06em;}
+  .product-list{display:flex;flex-direction:column;gap:13px;max-width:640px;margin:0 auto;}
+  .product-row{width:100%;display:flex;align-items:stretch;background:#0c1a30;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:0;cursor:pointer;text-align:left;color:var(--text);font-family:'DM Sans',sans-serif;transition:border-color .18s,box-shadow .18s,transform .1s;overflow:hidden;}
+  .product-row:hover{border-color:var(--accent);border-left-color:var(--accent2);box-shadow:0 8px 30px rgba(0,119,255,.14);transform:translateY(-1px);}
+  .pr-main{display:flex;gap:13px;padding:15px 16px;flex:1;align-items:flex-start;}
+  .pr-code{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;color:#3b9dff;background:rgba(59,157,255,.1);border:1px solid rgba(59,157,255,.22);border-radius:6px;padding:5px 7px;white-space:nowrap;margin-top:2px;}
+  .pr-body{flex:1;min-width:0;}
+  .pr-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--text);margin-bottom:5px;line-height:1.15;}
+  .pr-meta{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-bottom:9px;letter-spacing:.01em;}
+  .pr-tags{display:flex;flex-wrap:wrap;gap:5px;}
+  .pr-tags span{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#9fb0cd;background:rgba(30,45,72,.6);border:1px solid var(--border);border-radius:5px;padding:3px 7px;}
+  .pr-action{display:flex;align-items:center;gap:7px;padding:0 18px;background:rgba(59,157,255,.06);border-left:1px solid var(--border);font-size:12px;font-weight:600;color:#3b9dff;white-space:nowrap;letter-spacing:.03em;}
+  .pr-arrow{transition:transform .18s;display:inline-block;}
+  .product-row:hover .pr-arrow{transform:translateX(3px);}
+  @media(max-width:560px){.pr-main{flex-direction:column;}.pr-action{border-left:none;border-top:1px solid var(--border);padding:12px;justify-content:center;}}
   .header-deals-link{position:absolute;top:18px;right:20px;color:#8693b5;text-decoration:none;font-size:13px;padding:7px 14px;border:1px solid rgba(255,255,255,0.1);border-radius:6px;background:rgba(255,255,255,0.03);transition:all .15s;}
   .header-deals-link:hover{color:#fff;border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.06);}
   .logo-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:18px;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(0,119,255,.3);}
@@ -279,26 +298,32 @@ select{text-transform:uppercase;}
         <div class="entity-banner-sub">Step 2 of 2 · Choose a document</div>
       </div>
     </div>
-    <div class="landing-buttons">
-      <button class="landing-btn" onclick="selectDealType('weekly')">
-        <div class="lb-icon">📅</div>
-        <div class="lb-title">Weekly Contract</div>
-        <div class="lb-sub">Debits once per week</div>
+    <div class="config-head">
+      <div class="ch-l"><span class="ch-ico">⚙</span>Contract assembly</div>
+      <div class="ch-r">SELECT PRODUCT · 2 AVAILABLE</div>
+    </div>
+    <div class="product-list">
+      <button class="product-row" onclick="initBuild('weekly', false)">
+        <div class="pr-main">
+          <div class="pr-code">FG·MCA·W</div>
+          <div class="pr-body">
+            <div class="pr-title">Weekly MCA Agreement</div>
+            <div class="pr-meta">v54 template · weekly ACH · 4 modules</div>
+            <div class="pr-tags"><span>contract body</span><span>state disclosure</span><span>UCC schedule</span><span>ACH authorization</span></div>
+          </div>
+        </div>
+        <div class="pr-action">Configure <span class="pr-arrow">→</span></div>
       </button>
-      <button class="landing-btn" onclick="selectDealType('daily')">
-        <div class="lb-icon">🗓️</div>
-        <div class="lb-title">Daily Contract</div>
-        <div class="lb-sub">Debits every business day</div>
-      </button>
-      <button class="landing-btn" onclick="showPayoffForm()">
-        <div class="lb-icon">💲</div>
-        <div class="lb-title">Payoff Letter</div>
-        <div class="lb-sub">Balance &amp; wire details</div>
-      </button>
-      <button class="landing-btn" onclick="showZeroBalanceForm()">
-        <div class="lb-icon">📄</div>
-        <div class="lb-title">Zero Balance</div>
-        <div class="lb-sub">Account paid in full</div>
+      <button class="product-row" onclick="initBuild('daily', false)">
+        <div class="pr-main">
+          <div class="pr-code">FG·MCA·D</div>
+          <div class="pr-body">
+            <div class="pr-title">Daily MCA Agreement</div>
+            <div class="pr-meta">v54 template · daily ACH · 4 modules</div>
+            <div class="pr-tags"><span>contract body</span><span>state disclosure</span><span>UCC schedule</span><span>ACH authorization</span></div>
+          </div>
+        </div>
+        <div class="pr-action">Configure <span class="pr-arrow">→</span></div>
       </button>
     </div>
   </div>
@@ -313,26 +338,32 @@ select{text-transform:uppercase;}
         <div class="entity-banner-sub">Step 2 of 2 · All states supported · CA includes SB 1235 disclosure</div>
       </div>
     </div>
-    <div class="landing-buttons">
-      <button class="landing-btn" onclick="selectDealType('weekly', true)">
-        <div class="lb-icon">📅</div>
-        <div class="lb-title">Weekly Contract</div>
-        <div class="lb-sub">Debits once per week</div>
+    <div class="config-head">
+      <div class="ch-l"><span class="ch-ico">⚙</span>Contract assembly</div>
+      <div class="ch-r">SELECT PRODUCT · 2 AVAILABLE</div>
+    </div>
+    <div class="product-list">
+      <button class="product-row" onclick="initBuild('weekly', true)">
+        <div class="pr-main">
+          <div class="pr-code">FK·MCA·W</div>
+          <div class="pr-body">
+            <div class="pr-title">Weekly MCA Agreement</div>
+            <div class="pr-meta">Fundkey template · weekly ACH · SB 1235 ready</div>
+            <div class="pr-tags"><span>contract body</span><span>state disclosure</span><span>UCC schedule</span><span>ACH authorization</span></div>
+          </div>
+        </div>
+        <div class="pr-action">Configure <span class="pr-arrow">→</span></div>
       </button>
-      <button class="landing-btn" onclick="selectDealType('daily', true)">
-        <div class="lb-icon">🗓️</div>
-        <div class="lb-title">Daily Contract</div>
-        <div class="lb-sub">Debits every business day</div>
-      </button>
-      <button class="landing-btn" onclick="showPayoffForm('fundkey')">
-        <div class="lb-icon">💲</div>
-        <div class="lb-title">Payoff Letter</div>
-        <div class="lb-sub">Balance &amp; wire details</div>
-      </button>
-      <button class="landing-btn" onclick="showZeroBalanceForm('fundkey')">
-        <div class="lb-icon">📄</div>
-        <div class="lb-title">Zero Balance</div>
-        <div class="lb-sub">Account paid in full</div>
+      <button class="product-row" onclick="initBuild('daily', true)">
+        <div class="pr-main">
+          <div class="pr-code">FK·MCA·D</div>
+          <div class="pr-body">
+            <div class="pr-title">Daily MCA Agreement</div>
+            <div class="pr-meta">Fundkey template · daily ACH · SB 1235 ready</div>
+            <div class="pr-tags"><span>contract body</span><span>state disclosure</span><span>UCC schedule</span><span>ACH authorization</span></div>
+          </div>
+        </div>
+        <div class="pr-action">Configure <span class="pr-arrow">→</span></div>
       </button>
     </div>
   </div>
@@ -579,7 +610,7 @@ select{text-transform:uppercase;}
       <div class="compliance-hd">
         <span class="sh">🛡️</span>
         <h4>Pre-flight compliance</h4>
-        <span class="cnt">6 / 6 PASS</span>
+        <span class="cnt">8 / 8 PASS</span>
       </div>
       <div class="compliance-body">
         <div class="comp-row"><span class="ck">✓</span>State disclosure requirements<span class="pass">VERIFIED</span></div>
@@ -588,6 +619,8 @@ select{text-transform:uppercase;}
         <div class="comp-row"><span class="ck">✓</span>Repurchase schedule balance<span class="pass">BALANCED</span></div>
         <div class="comp-row"><span class="ck">✓</span>UCC-1 filing package<span class="pass">READY</span></div>
         <div class="comp-row"><span class="ck">✓</span>Contract clause cross-references<span class="pass">RESOLVED</span></div>
+        <div class="comp-row"><span class="ck">✓</span>CFDL jurisdiction rule set<span class="pass">MATCHED</span></div>
+        <div class="comp-row"><span class="ck">✓</span>Template version integrity<span class="pass">LOCKED</span></div>
       </div>
     </div>
     <div class="err-msg" id="errMsg"></div>
@@ -624,11 +657,33 @@ select{text-transform:uppercase;}
       <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Assembling contract body (Appendix A–D)</div>
       <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Injecting state disclosure module</div>
       <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Cross-referencing repurchase schedule</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Verifying CFDL compliance flags</div>
       <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Applying signature &amp; ACH authorization blocks</div>
       <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Rendering PDF via LibreOffice engine</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Generating document audit fingerprint</div>
       <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Sealing &amp; finalizing document</div>
     </div>
     <div class="gp-ref"><span>SESSION SECURE · US-EAST</span><span>REF <span class="rid" id="gpRef">—</span></span></div>
+  </div>
+</div>
+
+<div class="genpipe" id="initPipeline">
+  <div class="genpipe-card">
+    <div class="genpipe-head">
+      <div class="gp-mark">F</div>
+      <div>
+        <h3>Initializing build environment</h3>
+        <div class="gp-sub">FundGate Document Engine · allocating resources</div>
+      </div>
+    </div>
+    <div class="gp-bar"><div class="gp-bar-fill" id="initFill"></div></div>
+    <div class="gp-log" id="initLog">
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Allocating contract build session</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Loading template <span id="initTpl">v54</span></div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Mounting state disclosure engine</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Locking build parameters</div>
+    </div>
+    <div class="gp-ref"><span>ENVIRONMENT · SECURE</span><span>BUILD <span class="rid" id="initRef">—</span></span></div>
   </div>
 </div>
 
@@ -1352,6 +1407,48 @@ function runGenPipeline(ref) {
       setTimeout(step, 480 + Math.random() * 520);
     }
     step();
+  });
+}
+
+// Generic pipeline runner (used by the build-initialization sequence).
+function runNamedPipeline(overlayId, fillId, logId, base, jitter) {
+  return new Promise(function(resolve) {
+    var overlay = document.getElementById(overlayId);
+    var fill = document.getElementById(fillId);
+    var lines = Array.prototype.slice.call(document.querySelectorAll('#' + logId + ' .gp-line'));
+    if (!overlay || lines.length === 0) { resolve(); return; }
+    overlay.classList.add('visible');
+    fill.style.width = '0%';
+    lines.forEach(function(l){ l.className = 'gp-line'; l.querySelector('.gp-ico').innerHTML = '<span class="pd"></span>'; });
+    var i = 0;
+    function step() {
+      if (i > 0) {
+        var p = lines[i-1]; p.className = 'gp-line done';
+        p.querySelector('.gp-ico').innerHTML = '<span class="ok">✓</span>';
+      }
+      if (i >= lines.length) {
+        fill.style.width = '100%';
+        setTimeout(function(){ overlay.classList.remove('visible'); resolve(); }, 420);
+        return;
+      }
+      var c = lines[i]; c.className = 'gp-line active';
+      c.querySelector('.gp-ico').innerHTML = '<span class="sp"></span>';
+      fill.style.width = Math.round((i / lines.length) * 100) + '%';
+      i++;
+      setTimeout(step, base + Math.random() * jitter);
+    }
+    step();
+  });
+}
+
+// Build-initialization sequence: runs when a contract product is selected,
+// then hands off to the real form (selectDealType) so it stays fully usable.
+function initBuild(type, isFundkey) {
+  var ref = 'BLD-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+  var r = document.getElementById('initRef'); if (r) r.textContent = ref;
+  var tpl = document.getElementById('initTpl'); if (tpl) tpl.textContent = isFundkey ? 'Fundkey' : 'v54';
+  runNamedPipeline('initPipeline', 'initFill', 'initLog', 360, 300).then(function() {
+    selectDealType(type, isFundkey);
   });
 }
 
