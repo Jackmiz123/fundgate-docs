@@ -30,7 +30,13 @@ TEMPLATE_DAILY  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUND
 TEMPLATE_WEEKLY_CA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDKEY_TEMPLATE_WEEKLY.docx')
 TEMPLATE_DAILY_CA  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDKEY_TEMPLATE_DAILY.docx')
 FORM            = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fundgate_form.html')
+FORM_BROKER     = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fundgate_form_broker.html')
 DEALS_PAGE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deals_page.html')
+LOGIN_PAGE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'login.html')
+
+# Broker deployment flag. When set, the SAME codebase runs as the gated,
+# PDF-only, Past-Deals-hidden broker workspace. Off = the normal app, unchanged.
+BROKER_MODE = os.environ.get('BROKER_MODE', '').strip().lower() in ('1', 'true', 'yes', 'on')
 
 SIGNER2_BLOCKS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -569,11 +575,24 @@ class Handler(BaseHTTPRequestHandler):
         # Strip query string for path matching (e.g. /?clone=1 -> /)
         from urllib.parse import urlparse
         path_only = urlparse(self.path).path
+        if BROKER_MODE:
+            # Whole-site gate: no session -> login screen for any path.
+            if not auth_module.is_valid_cookie(self.headers.get('Cookie', '')):
+                self.send_response(200)
+                self.send_header('Content-Type','text/html; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(open(LOGIN_PAGE,'rb').read())
+                return
+            # Past Deals browsing is not exposed to the broker.
+            if path_only in ('/deals', '/deals/') or path_only.startswith('/deals/search') \
+               or path_only == '/deals/check-auth' or (path_only.startswith('/deals/') and len(path_only.split('/')) == 3):
+                self.send_response(404); self.end_headers()
+                return
         if path_only == '/':
             self.send_response(200)
             self.send_header('Content-Type','text/html; charset=utf-8')
             self.end_headers()
-            self.wfile.write(open(FORM,'rb').read())
+            self.wfile.write(open(FORM_BROKER if BROKER_MODE else FORM,'rb').read())
         elif path_only == '/deals' or path_only == '/deals/':
             # Past Deals page (HTML always served; client-side calls /deals/check-auth)
             self.send_response(200)
@@ -631,8 +650,31 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
+        # Login endpoint for the broker gate (public, pre-auth).
+        if self.path in ('/login', '/deals/login') and BROKER_MODE:
+            length = int(self.headers.get('Content-Length', 0))
+            try:
+                payload = json.loads(self.rfile.read(length))
+            except Exception:
+                payload = {}
+            if auth_module.check_password(payload.get('password')):
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Set-Cookie', auth_module.cookie_header())
+                self.end_headers()
+                self.wfile.write(b'{"ok":true}')
+            else:
+                self.send_response(401)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"ok":false}')
+            return
+        # In broker mode everything past this point needs a valid session.
+        if BROKER_MODE and not auth_module.is_valid_cookie(self.headers.get('Cookie', '')):
+            self.send_response(401); self.send_header('Content-Type','application/json'); self.end_headers()
+            self.wfile.write(b'{"error":"unauthorized"}'); return
         if self.path in ('/generate', '/generate/pdf'):
-            want_pdf = self.path.endswith('/pdf')
+            want_pdf = True if BROKER_MODE else self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(length))
             try:
@@ -693,7 +735,7 @@ class Handler(BaseHTTPRequestHandler):
             #   - other states          -> no disclosure (same as FundGate)
             # The legacy /generate/ca paths are kept as aliases so existing
             # bookmarks still work.
-            want_pdf = self.path.endswith('/pdf')
+            want_pdf = True if BROKER_MODE else self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(length))
             try:
@@ -742,7 +784,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
         elif self.path in ('/generate/payoff', '/generate/payoff/pdf'):
-            want_pdf = self.path.endswith('/pdf')
+            want_pdf = True if BROKER_MODE else self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(length))
             try:
@@ -774,7 +816,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
         elif self.path in ('/generate/zerobalance', '/generate/zerobalance/pdf'):
-            want_pdf = self.path.endswith('/pdf')
+            want_pdf = True if BROKER_MODE else self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(length))
             try:
@@ -832,6 +874,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404); self.end_headers()
 
     def do_DELETE(self):
+        if BROKER_MODE:
+            self.send_response(404); self.end_headers(); return
         if self.path.startswith('/deals/') and len(self.path.split('/')) == 3:
             if not self._require_auth(): return
             deal_id = self.path.split('/')[2]

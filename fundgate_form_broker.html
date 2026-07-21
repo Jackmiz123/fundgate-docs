@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>FundGate — Document Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a1220;--card:#101d33;--border:#1e2d48;--accent:#2b8cff;--accent2:#3b9dff;--text:#e8eef8;--muted:#8095b5;--success:#00c281;--input-bg:#0c1a30;}
+  /* Dark-console overrides: keep JPEG logos legible on dark surfaces */
+  .entity-logo img,.entity-banner-logo{background:#fff;border-radius:8px;padding:6px 8px;box-shadow:0 2px 10px rgba(0,0,0,.35);}
+  .section-card,.entity-card,.landing-btn{background:var(--card)!important;border-color:var(--border)!important;}
+  input,select,textarea{background:var(--input-bg)!important;color:var(--text)!important;border-color:var(--border)!important;}
+  input::placeholder{color:#5a6d90!important;}
+  .review-item,.review-group,.review-section{background:var(--card)!important;}
+  hr,.section-divider{border-color:var(--border)!important;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh;padding-bottom:60px;-webkit-text-size-adjust:100%;}
+  .header{background:linear-gradient(135deg,#0a1628,#0d1f3c);border-bottom:1px solid var(--border);padding:16px 20px 12px;position:sticky;top:0;z-index:100;}
+  .header-inner{display:flex;align-items:center;gap:12px;max-width:680px;margin:0 auto;}
+  /* ---- Broker console chrome (decorative) ---- */
+  .header{position:relative;}
+  .hdr-meta{position:absolute;top:14px;right:20px;display:flex;align-items:center;gap:14px;}
+  .hdr-meta .sess{font-family:'DM Sans',sans-serif;font-size:10px;color:#8ea6c9;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
+  .hdr-meta .sess .d{width:6px;height:6px;border-radius:50%;background:#00c281;box-shadow:0 0 8px #00c281;animation:sesspulse 2.4s ease-in-out infinite;}
+  @keyframes sesspulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .hdr-meta .lock-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#c3d0e6;font-size:11px;font-weight:500;padding:6px 12px;border-radius:8px;cursor:pointer;transition:background .15s;font-family:'DM Sans',sans-serif;}
+  .hdr-meta .lock-btn:hover{background:rgba(255,255,255,.12);}
+  .statusbar{background:#0b1526;border-bottom:1px solid #16233d;padding:8px 20px;position:sticky;top:60px;z-index:90;overflow-x:auto;}
+  .statusbar-inner{display:flex;align-items:center;gap:16px;max-width:680px;margin:0 auto;white-space:nowrap;}
+  .sb-mod{display:flex;align-items:center;gap:7px;font-family:'DM Sans',sans-serif;font-size:10.5px;color:#6b7a99;letter-spacing:.04em;}
+  .sb-mod .dot{width:6px;height:6px;border-radius:50%;background:#00c281;flex-shrink:0;}
+  .sb-mod.idle .dot{background:#3b4a66;}
+  .sb-sep{width:1px;height:14px;background:#1c2c48;flex-shrink:0;}
+  .sb-build{margin-left:auto;font-family:'DM Sans',sans-serif;font-size:10px;color:#4a5c7e;letter-spacing:.08em;flex-shrink:0;}
+  @media(max-width:640px){.hdr-meta .sess{display:none;}.statusbar{top:56px;}}
+  .sysfoot{margin-top:40px;padding:18px 20px 30px;border-top:1px solid var(--border);text-align:center;}
+  .sysfoot .row{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;font-family:'DM Sans',sans-serif;font-size:10.5px;color:var(--muted);letter-spacing:.05em;}
+  .sysfoot .row .b{display:flex;align-items:center;gap:6px;}
+  .sysfoot .row .b .d{width:5px;height:5px;border-radius:50%;background:var(--success);}
+  .sysfoot .tag{margin-top:8px;font-size:10px;color:#9aa7bd;letter-spacing:.14em;text-transform:uppercase;}
+  /* ---- Generation pipeline overlay (decorative processing sequence) ---- */
+  .genpipe{position:fixed;inset:0;z-index:2000;background:#070d1a;display:none;align-items:center;justify-content:center;padding:20px;}
+  .genpipe.visible{display:flex;}
+  .genpipe-card{width:100%;max-width:460px;background:#0b1526;border:1px solid #1c2c48;border-radius:16px;padding:26px 26px 24px;box-shadow:0 30px 90px rgba(0,0,0,.6);}
+  .genpipe-head{display:flex;align-items:center;gap:11px;margin-bottom:6px;}
+  .genpipe-head .gp-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#0077ff,#0055cc);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;color:#fff;font-size:17px;}
+  .genpipe-head h3{font-size:15px;color:#e8eef8;font-weight:600;}
+  .genpipe-head .gp-sub{font-size:11px;color:#7186a8;letter-spacing:.04em;}
+  .gp-bar{height:5px;background:#16233d;border-radius:5px;overflow:hidden;margin:16px 0 18px;}
+  .gp-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#0077ff,#3b9dff);border-radius:5px;transition:width .4s ease;}
+  .gp-log{font-family:'JetBrains Mono','DM Sans',monospace;font-size:12px;line-height:1.9;color:#7186a8;min-height:200px;}
+  .gp-line{display:flex;align-items:center;gap:9px;opacity:.25;transition:opacity .3s,color .3s;}
+  .gp-line.active{opacity:1;color:#c3d0e6;}
+  .gp-line.done{opacity:1;color:#8ea6c9;}
+  .gp-ico{width:15px;height:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .gp-ico .sp{width:12px;height:12px;border:2px solid rgba(59,157,255,.3);border-top-color:#3b9dff;border-radius:50%;animation:spin .7s linear infinite;}
+  .gp-ico .ok{color:#00c281;font-size:13px;}
+  .gp-ico .pd{width:5px;height:5px;border-radius:50%;background:#3b4a66;}
+  .gp-ref{margin-top:16px;padding-top:14px;border-top:1px solid #16233d;display:flex;align-items:center;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;color:#4a5c7e;}
+  .gp-ref .rid{color:#8ea6c9;}
+  .succ-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin:-4px 0 18px;letter-spacing:.03em;}
+  .succ-meta .rid{color:var(--accent);}
+  /* ---- Pre-flight compliance panel (decorative) ---- */
+  .compliance{margin-top:18px;border:1px solid var(--border);border-radius:12px;background:#0c1a30;overflow:hidden;}
+  .compliance-hd{display:flex;align-items:center;gap:9px;padding:12px 16px;background:#0b1526;border-bottom:1px solid var(--border);}
+  .compliance-hd .sh{color:var(--success);font-size:15px;}
+  .compliance-hd h4{font-size:12.5px;color:#c3d0e6;font-weight:600;letter-spacing:.04em;}
+  .compliance-hd .cnt{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--success);}
+  .compliance-body{padding:6px 16px 12px;}
+  .comp-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(30,45,72,.5);font-size:12.5px;color:#9fb0cd;}
+  .comp-row:last-child{border-bottom:none;}
+  .comp-row .ck{width:17px;height:17px;border-radius:50%;background:rgba(0,194,129,.14);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+  .comp-row .pass{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--success);letter-spacing:.08em;background:rgba(0,194,129,.1);padding:2px 7px;border-radius:5px;}
+  .header-deals-link{position:absolute;top:18px;right:20px;color:#8693b5;text-decoration:none;font-size:13px;padding:7px 14px;border:1px solid rgba(255,255,255,0.1);border-radius:6px;background:rgba(255,255,255,0.03);transition:all .15s;}
+  .header-deals-link:hover{color:#fff;border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.06);}
+  .logo-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:18px;color:#fff;flex-shrink:0;box-shadow:0 0 20px rgba(0,119,255,.3);}
+  .header-text h1{font-family:'DM Serif Display',serif;font-size:18px;color:#fff;}
+  .header-text p{font-size:11px;color:rgba(255,255,255,.6);letter-spacing:.05em;text-transform:uppercase;}
+  .progress-wrap{max-width:680px;margin:0 auto;padding:14px 20px 0;}
+  .form-back-bar{max-width:680px;margin:14px auto 0;padding:0 20px;}
+  .form-back-bar .back-link{margin-bottom:0;}
+  .progress-steps{display:flex;gap:4px;}
+  .step-pill{flex:1;height:4px;border-radius:4px;background:var(--border);transition:background .4s;}
+  .step-pill.active{background:var(--accent);}
+  .step-pill.done{background:var(--success);}
+  .step-labels{display:flex;justify-content:space-between;margin-top:6px;}
+  .step-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;transition:color .3s;}
+  .step-label.active{color:var(--accent);}
+  .step-label.done{color:var(--success);}
+  .content{max-width:680px;margin:0 auto;padding:20px 16px 0;}
+  .section-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;display:none;animation:slideIn .35s ease;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .section-card.visible{display:block;}
+  @keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .section-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+  .section-title .icon{width:28px;height:28px;border-radius:8px;background:rgba(0,194,255,.12);display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .section-sub{font-size:12px;color:var(--muted);margin-bottom:18px;margin-left:36px;}
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-wrap{display:flex;flex-direction:column;gap:5px;}
+  .field-wrap.full{grid-column:1/-1;}
+  label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;}
+  input,select{background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;width:100%;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,194,255,.1);}
+  input::placeholder{color:#a0a8b8;}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a99' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+  .input-prefix{position:relative;}
+  .input-prefix span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
+
+  /* Landing page selector */
+  .landing{max-width:760px;margin:0 auto;padding:32px 20px 80px;display:flex;flex-direction:column;align-items:stretch;}
+  .landing > div{display:flex;flex-direction:column;width:100%;animation:slideIn .3s ease;}
+  .landing-hero{text-align:center;margin:8px 0 28px 0;}
+  .hero-eyebrow{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.14em;font-weight:600;margin-bottom:10px;}
+  .landing h2{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);text-align:center;margin:0 0 10px 0;line-height:1.2;letter-spacing:-.01em;}
+  .landing p{color:var(--muted);font-size:15px;text-align:center;margin:0 0 8px 0;line-height:1.5;}
+  .landing-buttons{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;margin-top:8px;}
+  .landing-buttons--entity{gap:20px;}
+  .landing-btn{position:relative;background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:24px 18px;cursor:pointer;color:var(--text);font-family:'DM Sans',sans-serif;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(13,31,60,.04);}
+  .landing-btn:hover{border-color:var(--accent);box-shadow:0 8px 28px rgba(0,119,255,.14);transform:translateY(-3px);}
+  .landing-btn:active{transform:translateY(-1px);}
+  .landing-btn .lb-icon{font-size:42px;display:flex;align-items:center;justify-content:center;height:64px;width:100%;line-height:1;}
+  .landing-btn .lb-icon img{max-height:60px;max-width:90%;width:auto;display:block;object-fit:contain;}
+  .landing-btn .lb-title{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);line-height:1.15;text-align:center;}
+  .landing-btn .lb-sub{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;line-height:1.4;text-align:center;}
+  /* Entity cards: more prominent */
+  .entity-card{padding:32px 22px 26px;gap:16px;}
+  .entity-card .entity-logo{height:80px;}
+  .entity-card .entity-logo img{max-height:64px;}
+  .entity-card--accent{border-color:#1a3fa0;}
+  .entity-card--accent:hover{border-color:#0a2470;box-shadow:0 8px 28px rgba(26,63,160,.18);}
+  .lb-tag{display:inline-block;margin-top:4px;padding:5px 12px;border-radius:999px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
+  .tag-blue{background:rgba(0,119,255,.10);color:var(--accent);}
+  .tag-navy{background:rgba(26,63,160,.10);color:#1a3fa0;}
+  /* Back link */
+  .back-link{align-self:flex-start;background:none;border:none;color:var(--accent);font-size:13px;font-weight:500;cursor:pointer;padding:6px 4px;margin-bottom:14px;font-family:'DM Sans',sans-serif;transition:opacity .2s;}
+  .back-link:hover{opacity:.7;}
+  /* Entity banner shown at top of options step */
+  .entity-banner{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;margin-bottom:22px;box-shadow:0 1px 3px rgba(13,31,60,.04);}
+  .entity-banner--accent{border-color:rgba(26,63,160,.30);background:linear-gradient(135deg,#fff,rgba(26,63,160,.04));}
+  .entity-banner-logo{height:38px;width:auto;max-width:140px;flex-shrink:0;object-fit:contain;}
+  .entity-banner-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .entity-banner-name{font-family:'DM Serif Display',serif;font-size:17px;color:var(--text);line-height:1.2;}
+  .entity-banner-sub{font-size:12px;color:var(--muted);line-height:1.4;}
+  .back-link{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:0;margin:0 0 16px 0;align-self:flex-start;font-family:'DM Sans',sans-serif;}
+  .back-link:hover{text-decoration:underline;}
+  @media (max-width:480px){
+    .landing{padding:20px 16px 60px;}
+    .landing h2{font-size:22px;}
+    .landing p{font-size:14px;}
+    .landing-buttons{grid-template-columns:1fr;gap:12px;}
+    .landing-buttons--entity{gap:14px;}
+    .entity-card{padding:24px 18px 20px;}
+    .entity-card .entity-logo{height:60px;}
+    .entity-card .entity-logo img{max-height:48px;}
+    .entity-banner{padding:12px 14px;gap:10px;margin-bottom:16px;}
+    .entity-banner-logo{height:30px;max-width:110px;}
+    .entity-banner-name{font-size:15px;}
+    .entity-banner-sub{font-size:11px;}
+  }
+  input:not(#Owner_Guarantor_1):not(#Merchant_1):not(#Authorized_Signer_Name):not(#Title){text-transform:uppercase;}
+select{text-transform:uppercase;}
+  .input-prefix input{padding-left:24px;}
+  .section-divider{border:none;border-top:1px solid var(--border);margin:14px 0;grid-column:1/-1;}
+  .section-label{grid-column:1/-1;font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;display:flex;align-items:center;justify-content:space-between;}
+  .toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+  .toggle input{opacity:0;width:0;height:0;}
+  .toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:24px;cursor:pointer;transition:.3s;}
+  .toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+  .toggle input:checked+.toggle-slider{background:var(--accent);}
+  .toggle input:checked+.toggle-slider:before{transform:translateX(20px);}
+  .fee-toggle{padding:0 12px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;min-width:44px;transition:all .15s;}
+  .fee-toggle:hover{border-color:var(--accent);color:var(--accent);}
+  .fee-toggle[data-mode="dollar"]{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .nav-row{display:flex;gap:10px;margin-top:20px;max-width:680px;margin-left:auto;margin-right:auto;padding:0 16px;}
+  .btn{flex:1;padding:14px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;}
+  .btn-back{background:var(--card);border:1px solid var(--border);color:var(--muted);}
+  .btn-next{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px rgba(0,119,255,.2);}
+  .btn-generate{background:linear-gradient(135deg,var(--success),#00a878);color:#000;box-shadow:0 4px 20px rgba(0,229,160,.25);}
+  .review-block{margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+  .review-block-title{background:rgba(0,194,255,.07);padding:9px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600;}
+  .review-grid{display:grid;grid-template-columns:1fr 1fr;}
+  .review-item{padding:10px 14px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);}
+  .review-item:nth-child(even){border-right:none;}
+  .review-item label{font-size:10px;color:var(--muted);}
+  .review-item .val{font-size:13px;color:var(--text);margin-top:2px;word-break:break-word;}
+  .success-screen{text-align:center;padding:40px 16px;display:none;}
+  .success-screen.visible{display:block;}
+  .check-circle{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--success),#00a878);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;box-shadow:0 0 40px rgba(0,229,160,.3);animation:pop .5s cubic-bezier(.175,.885,.32,1.275);}
+  @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  .success-screen h2{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:8px;}
+  .success-screen p{color:var(--muted);font-size:14px;margin-bottom:28px;}
+  .btn-dl{display:block;width:100%;max-width:340px;margin:0 auto 12px;padding:15px;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+  .btn-dl-docx{background:linear-gradient(135deg,#2b5fca,#1a3fa0);color:#fff;box-shadow:0 4px 20px rgba(43,95,202,.3);}
+  .btn-dl-docx:hover{transform:translateY(-1px);}
+  .btn-dl-new{background:var(--card);border:1px solid var(--border);color:var(--muted);}
+  .btn-dl-edit{background:rgba(0,194,255,.1);border:1px solid rgba(0,194,255,.3);color:var(--accent);}
+  .btn-dl-pdf{background:linear-gradient(135deg,#c0392b,#922b21);color:#fff;box-shadow:0 4px 20px rgba(192,57,43,.3);}
+  .loading-overlay{position:fixed;inset:0;background:rgba(245,246,250,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;display:none;}
+  .loading-overlay.visible{display:flex;}
+  .spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .err-msg{background:rgba(255,77,109,.1);border:1px solid rgba(255,77,109,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:#ff4d6d;margin-top:12px;display:none;}
+  @media(max-width:400px){.field-grid{grid-template-columns:1fr}.review-grid{grid-template-columns:1fr}.review-item{border-right:none!important}}
+  @media(max-width:680px){
+    input,select{font-size:16px;padding:12px 12px;}
+    .input-prefix input{padding-left:26px;}
+    .btn{padding:16px;font-size:16px;}
+    .landing-btn{padding:24px 16px;}
+    .landing-btn .lb-title{font-size:17px;}
+    .landing-btn .lb-icon{font-size:36px;}
+    .section-card{padding:16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner" onclick="goBackToLanding()" style="cursor:pointer;">
+    <div class="logo-mark" id="headerLogo">F</div>
+    <div class="header-text">
+      <h1 id="headerTitle">Document Generator</h1>
+      <p id="headerSubtitle">Choose an entity to begin</p>
+    </div>
+  </div>
+  <div class="hdr-meta">
+    <span class="sess"><span class="d"></span>Secure session</span>
+    <button class="lock-btn" type="button" onclick="lockWorkspace()">🔒 Lock</button>
+  </div>
+</div>
+
+<div class="statusbar">
+  <div class="statusbar-inner">
+    <span class="sb-mod"><span class="dot"></span>Contract engine</span>
+    <span class="sb-sep"></span>
+    <span class="sb-mod"><span class="dot"></span>Disclosure layer</span>
+    <span class="sb-sep"></span>
+    <span class="sb-mod"><span class="dot"></span>PDF pipeline</span>
+    <span class="sb-sep"></span>
+    <span class="sb-mod idle"><span class="dot"></span>Sync queue</span>
+    <span class="sb-build">FundGate DE · v4.2.1 · US-EAST</span>
+  </div>
+</div>
+
+<!-- LANDING SELECTOR — entity first, then document type -->
+<div class="landing" id="landingScreen">
+
+  <!-- STEP 1: Entity selection -->
+  <div id="entityStep">
+    <div class="landing-hero">
+      <div class="hero-eyebrow">Step 1 of 2</div>
+      <h2>Which entity is funding this deal?</h2>
+      <p>Choose the LLC the contract will be issued under.</p>
+    </div>
+    <div class="landing-buttons landing-buttons--entity">
+      <button class="landing-btn entity-card" data-entity="fundgate" onclick="selectEntity('fundgate')">
+        <div class="lb-icon entity-logo"><img src="data:image/jpeg;base64,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" alt="FundGate"></div>
+        <div class="lb-title">FundGate LLC</div>
+        <div class="lb-sub">Standard funding entity</div>
+        <div class="lb-tag tag-blue">National</div>
+      </button>
+      <button class="landing-btn entity-card entity-card--accent" data-entity="fundkey" onclick="selectEntity('fundkey')">
+        <div class="lb-icon entity-logo"><img src="data:image/jpeg;base64,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" alt="Fundkey"></div>
+        <div class="lb-title">Fundkey LLC</div>
+        <div class="lb-sub">CA &amp; multi-state funding</div>
+        <div class="lb-tag tag-navy">SB 1235 disclosure ready</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2A: FundGate document options -->
+  <div id="fundgateOptions" style="display:none;">
+    <button class="back-link" onclick="backToEntityStep()">← Back</button>
+    <div class="entity-banner">
+      <img src="data:image/jpeg;base64,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" alt="FundGate" class="entity-banner-logo">
+      <div class="entity-banner-text">
+        <div class="entity-banner-name">FundGate LLC</div>
+        <div class="entity-banner-sub">Step 2 of 2 · Choose a document</div>
+      </div>
+    </div>
+    <div class="landing-buttons">
+      <button class="landing-btn" onclick="selectDealType('weekly')">
+        <div class="lb-icon">📅</div>
+        <div class="lb-title">Weekly Contract</div>
+        <div class="lb-sub">Debits once per week</div>
+      </button>
+      <button class="landing-btn" onclick="selectDealType('daily')">
+        <div class="lb-icon">🗓️</div>
+        <div class="lb-title">Daily Contract</div>
+        <div class="lb-sub">Debits every business day</div>
+      </button>
+      <button class="landing-btn" onclick="showPayoffForm()">
+        <div class="lb-icon">💲</div>
+        <div class="lb-title">Payoff Letter</div>
+        <div class="lb-sub">Balance &amp; wire details</div>
+      </button>
+      <button class="landing-btn" onclick="showZeroBalanceForm()">
+        <div class="lb-icon">📄</div>
+        <div class="lb-title">Zero Balance</div>
+        <div class="lb-sub">Account paid in full</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 2B: Fundkey document options -->
+  <div id="fundkeyOptions" style="display:none;">
+    <button class="back-link" onclick="backToEntityStep()">← Back</button>
+    <div class="entity-banner entity-banner--accent">
+      <img src="data:image/jpeg;base64,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" alt="Fundkey" class="entity-banner-logo">
+      <div class="entity-banner-text">
+        <div class="entity-banner-name">Fundkey LLC</div>
+        <div class="entity-banner-sub">Step 2 of 2 · All states supported · CA includes SB 1235 disclosure</div>
+      </div>
+    </div>
+    <div class="landing-buttons">
+      <button class="landing-btn" onclick="selectDealType('weekly', true)">
+        <div class="lb-icon">📅</div>
+        <div class="lb-title">Weekly Contract</div>
+        <div class="lb-sub">Debits once per week</div>
+      </button>
+      <button class="landing-btn" onclick="selectDealType('daily', true)">
+        <div class="lb-icon">🗓️</div>
+        <div class="lb-title">Daily Contract</div>
+        <div class="lb-sub">Debits every business day</div>
+      </button>
+      <button class="landing-btn" onclick="showPayoffForm('fundkey')">
+        <div class="lb-icon">💲</div>
+        <div class="lb-title">Payoff Letter</div>
+        <div class="lb-sub">Balance &amp; wire details</div>
+      </button>
+      <button class="landing-btn" onclick="showZeroBalanceForm('fundkey')">
+        <div class="lb-icon">📄</div>
+        <div class="lb-title">Zero Balance</div>
+        <div class="lb-sub">Account paid in full</div>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ZERO BALANCE LETTER FORM -->
+<div class="content" id="zeroBalanceContent" style="display:none;">
+  <div class="section-card visible">
+    <div class="section-title"><div class="icon">📄</div> Zero Balance Letter</div>
+    <div class="section-sub">Confirm a merchant's account is paid in full ($0.00 balance)</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Letter Date</label><input type="date" id="zb_date"></div>
+      <div class="field-wrap full"><label>Merchant / Business Name</label><input type="text" id="zb_merchant" placeholder="J&J Roofing LLC"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-next" onclick="generateZeroBalance('pdf', this)" style="flex:1;">⬇ Download PDF</button>
+    </div>
+    <div class="err-msg" id="zbErr" style="display:none;margin-top:10px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <a href="#" onclick="goBackToLanding();return false;" style="color:var(--muted);font-size:12px;text-decoration:underline;">← Back to menu</a>
+    </div>
+  </div>
+</div>
+
+<!-- PAYOFF LETTER FORM — separate from the contract flow -->
+<div class="content" id="payoffContent" style="display:none;">
+  <div class="section-card visible">
+    <div class="section-title"><div class="icon">💲</div> Payoff Letter</div>
+    <div class="section-sub">Generate a payoff letter with balance and wire instructions</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Letter Date</label><input type="date" id="payoff_date"></div>
+      <div class="field-wrap full"><label>Merchant / Business Name</label><input type="text" id="payoff_merchant" placeholder="Beck Inc. Pipeline Construction"></div>
+      <div class="field-wrap full" style="margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:10px;background:rgba(0,119,255,0.03);">
+        <label style="color:var(--accent);font-size:12px;margin-bottom:6px;display:block;">ORIGINAL PURCHASED AMOUNT <span style="color:var(--muted);font-size:10px;text-transform:none;">(optional — only fill in if merchant is paying off early with an addendum discount)</span></label>
+        <div class="input-prefix"><span>$</span><input type="text" id="payoff_original_amount" placeholder="74,950.00"></div>
+        <div style="color:var(--muted);font-size:11px;margin-top:6px;">Example: Deal is $74,950 total. Leave blank if no early payoff discount applies.</div>
+      </div>
+      <div class="field-wrap full" style="margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:10px;">
+        <label>CURRENT BALANCE <span style="color:var(--accent);font-size:10px;text-transform:none;">* required</span></label>
+        <div style="color:var(--muted);font-size:11px;margin-bottom:6px;">What the merchant owes as of today. If addendum applies, use the discounted repurchase amount. If no addendum, use the full deal balance.</div>
+        <div class="input-prefix"><span>$</span><input type="text" id="payoff_balance" placeholder="60,000.00"></div>
+        <div style="color:var(--muted);font-size:11px;margin-top:6px;">Example: 30-day repurchase = $60,000 → Current Balance = <b>$60,000</b></div>
+      </div>
+      <div class="field-wrap full" style="margin-top:8px;padding:12px;border:1px solid var(--border);border-radius:10px;">
+        <label>PAYOFF WIRE AMOUNT <span style="color:var(--accent);font-size:10px;text-transform:none;">* required</span></label>
+        <div style="color:var(--muted);font-size:11px;margin-bottom:6px;">Current balance minus any payments already received. This is what the merchant wires to settle.</div>
+        <div class="input-prefix"><span>$</span><input type="text" id="payoff_wire_amount" placeholder="50,000.00"></div>
+        <div style="color:var(--muted);font-size:11px;margin-top:6px;">Example: Balance is $60,000, merchant paid $10,000 → Wire Amount = <b>$50,000</b></div>
+      </div>
+      <div class="field-wrap full" style="margin-top:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label class="toggle"><input type="checkbox" id="payoff_discount_warning" checked><span class="toggle-slider"></span></label>
+          <span style="font-size:13px;color:var(--text);">Include "IF PAID OFF BY A THIRD PARTY, THIS DISCOUNT WILL BE CONSIDERED INVALID" warning</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-next" onclick="generatePayoff('pdf', this)" style="flex:1;">⬇ Download PDF</button>
+    </div>
+    <div class="err-msg" id="payoffErr" style="display:none;margin-top:10px;"></div>
+    <div style="text-align:center;margin-top:16px;">
+      <a href="#" onclick="goBackToLanding();return false;" style="color:var(--muted);font-size:12px;text-decoration:underline;">← Back to menu</a>
+    </div>
+  </div>
+</div>
+
+<!-- Form-back bar: visible only inside the contract/payoff/zerobalance form.
+     Returns user to the document type selector for their current entity,
+     preserving entity choice and form field values. -->
+<div class="form-back-bar" id="formBackBar" style="display:none;">
+  <button class="back-link" onclick="backToDocumentType()">← Change document type</button>
+</div>
+
+<div class="progress-wrap" id="progressWrap" style="display:none;">
+  <div class="progress-steps">
+    <div class="step-pill active" id="pill0"></div>
+    <div class="step-pill" id="pill1"></div>
+    <div class="step-pill" id="pill2"></div>
+    <div class="step-pill" id="pill3"></div>
+    <div class="step-pill" id="pill4"></div>
+  </div>
+  <div class="step-labels">
+    <span class="step-label active" id="lbl0">Merchant</span>
+    <span class="step-label" id="lbl1">Deal</span>
+    <span class="step-label" id="lbl2">Banking</span>
+    <span class="step-label" id="lbl3">Guarantor</span>
+    <span class="step-label" id="lbl4">Review</span>
+  </div>
+</div>
+
+<div class="content" id="mainContent" style="display:none;">
+  <!-- STEP 0 -->
+  <div class="section-card visible" id="step0">
+    <div class="section-title"><div class="icon">🏢</div> Merchant Information</div>
+    <div class="section-sub">Enter once — flows to all pages automatically</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Agreement Date</label><input type="date" id="Agreement_Date"></div>
+      <div class="field-wrap full"><label>Merchant Legal Name</label><input type="text" id="Merchant_Legal_Name" placeholder="Full legal business name"></div>
+      <div class="field-wrap full"><label>DBA</label><input type="text" id="Merchant_DBA" placeholder="Trade name if different"></div>
+      <div class="field-wrap"><label>Entity Type</label>
+        <select id="Entity_Type"><option value="">Select...</option><option>LLC</option><option>Corporation</option><option>S-Corporation</option><option>Partnership</option><option>Sole Proprietorship</option></select>
+      </div>
+      <div class="field-wrap"><label>State of Organization</label>
+        <select id="State_of_Organization" onchange="updateNYRevField()"><option value="">Select...</option><option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option><option>CO</option><option>CT</option><option>DE</option><option>FL</option><option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option><option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VT</option><option>VA</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option></select>
+      </div>
+      <div class="field-wrap full"><label>Address of Executive Offices</label><input type="text" id="Executive_Office_Address" placeholder="Street, City, State, ZIP"></div>
+      <div class="field-wrap full"><label>Mailing Address <span style="color:var(--muted);font-size:10px;">(blank = same as above)</span></label><input type="text" id="Mailing_Address" placeholder="Leave blank if same"></div>
+      <div class="field-wrap"><label>Business Start Date (mm/yy)</label><input type="text" id="Business_Start_Date" placeholder="01/20"></div>
+      <div class="field-wrap"><label>Federal EIN</label><input type="text" id="Federal_EIN" placeholder="XX-XXXXXXX"></div>
+      <div class="field-wrap full"><label>Business Phone</label><input type="tel" id="Business_Phone" oninput="this.value=fmtPhone(this.value)" placeholder="(000) 000-0000"></div>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="section-card" id="step1">
+    <div class="section-title"><div class="icon">💰</div> Deal Terms</div>
+    <div class="section-sub">Purchase price, amounts & fees</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Purchase Price</label><div class="input-prefix"><span>$</span><input type="text" id="Purchase_Price" placeholder="50,000.00" oninput="calcPurchasedAmt();calcAddendum()"></div></div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div class="field-wrap" style="flex:1;margin:0;"><label>Factor Rate</label><input type="text" id="factor_purchased" placeholder="1.40" oninput="calcPurchasedAmt();calcPaymentFromTerm()"></div>
+        <div class="field-wrap" style="flex:2;margin:0;"><label>Purchased Amount</label><div class="input-prefix"><span>$</span><input type="text" id="Purchased_Amount" placeholder="70,000.00" oninput="calcPaymentFromTerm()"></div></div>
+      </div>
+      <div class="field-wrap"><label>Specified Percentage <button type="button" onclick="openCalcModal()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;margin-left:6px;vertical-align:middle;">🧮 Calculator</button></label><div class="input-prefix"><span>%</span><input type="text" id="Specified_Percentage" placeholder="15"></div></div>
+      <div class="field-wrap"><label>ACH Frequency</label><input type="text" id="ACH_Frequency" value="Weekly" readonly style="background:rgba(255,255,255,0.05);color:var(--text-muted);cursor:not-allowed;"></div>
+      <div class="field-wrap" id="wrap_term"><label id="lbl_term">Number of Weeks <span style="color:var(--accent)">*</span> <span style="font-size:11px;color:var(--muted);font-weight:normal;">(auto-calculates payment)</span></label><input type="text" id="Payment_Term_Count" placeholder="24" oninput="calcPaymentFromTerm()"></div>
+      <div class="field-wrap" id="wrap_weekly_amt"><label>Specific Weekly Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Weekly_Amount" placeholder="1,500.00"></div></div>
+      <div class="field-wrap" id="wrap_daily_amt"><label>Specific Daily Amount <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="Specific_Daily_Amount" placeholder="300.00"></div></div>
+      <div class="field-wrap full" id="wrap_ca_avg_rev" style="display:none;"><label>Avg Monthly Revenue (CA Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="CA_Avg_Monthly_Revenue" placeholder="120,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives Estimated Term on the disclosure.</div></div>
+      <div class="field-wrap full" id="wrap_ny_avg_rev" style="display:none;"><label>Avg Monthly Revenue (NY Disclosure) <span style="color:var(--accent)">*</span></label><div class="input-prefix"><span>$</span><input type="text" id="NY_Avg_Monthly_Revenue" placeholder="75,000.00"></div><div style="font-size:11px;color:var(--muted);margin-top:4px;">Round down conservatively from 3-month bank statement avg. Drives APR and Estimated Term on the NY disclosure.</div></div>
+      <div class="field-wrap full" id="wrap_ct_broker" style="display:none;">
+        <label>Broker Compensation (CT Disclosure)</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="CT_Broker_Pays" style="flex:0 0 110px;" onchange="updateCTBrokerAmt()">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+          <div class="input-prefix" style="flex:1;"><span>$</span><input type="text" id="CT_Broker_Amount" placeholder="3,000.00" disabled></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Required for CT deals. If yes, enter the dollar amount paid directly to the broker from the financed amount.</div>
+      </div>
+      <div class="field-wrap full" id="wrap_ut_broker" style="display:none;">
+        <label>Broker Compensation (UT Disclosure)</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="text" id="UT_Broker_Name" placeholder="Broker name" style="flex:1;">
+          <div class="input-prefix" style="flex:0 0 180px;"><span>$</span><input type="text" id="UT_Broker_Amount" placeholder="1,500.00"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Required for UT deals. Utah requires the broker name and the amount paid to the broker, even when the provider pays the commission. Leave blank if there is no broker.</div>
+      </div>
+      <hr class="section-divider">
+      <div class="section-label">Appendix A — Fees</div>
+      <div class="field-wrap">
+        <label>ACH Program Fee <span style="font-size:11px;color:var(--muted);font-weight:normal;">(toggle % or $)</span></label>
+        <div style="display:flex;gap:6px;align-items:stretch;">
+          <button type="button" class="fee-toggle" id="ACH_Program_Fee_Toggle" data-mode="pct" onclick="toggleFeeMode('ACH_Program_Fee')">%</button>
+          <div class="input-prefix" style="flex:1;"><span id="ACH_Program_Fee_Prefix">%</span><input type="text" id="ACH_Program_Fee_Percentage" placeholder="2.5"></div>
+        </div>
+      </div>
+      <div class="field-wrap">
+        <label>Origination Fee <span style="font-size:11px;color:var(--muted);font-weight:normal;">(toggle % or $)</span></label>
+        <div style="display:flex;gap:6px;align-items:stretch;">
+          <button type="button" class="fee-toggle" id="Origination_Fee_Toggle" data-mode="pct" onclick="toggleFeeMode('Origination_Fee')">%</button>
+          <div class="input-prefix" style="flex:1;"><span id="Origination_Fee_Prefix">%</span><input type="text" id="Origination_Fee_Percentage" placeholder="3"></div>
+        </div>
+      </div>
+      <hr class="section-divider">
+      <div class="section-label">
+        <span>Addendum — Repurchase Schedule</span>
+        <label class="toggle"><input type="checkbox" id="includeAddendum" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div id="addendumFields" style="display:contents">
+        <div class="field-wrap"><label>Addendum Date</label><input type="date" id="Addendum_Date"></div>
+        <div style="padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card);margin-bottom:10px;">
+          <p style="color:var(--muted);font-size:11px;margin:0 0 8px;">Enter a factor rate (e.g. 1.20) and the repurchase amount auto-calculates from Purchase Price. Or type the dollar amount directly.</p>
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>0–30 Days Factor</label><input type="text" id="factor_30" placeholder="1.20" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 0–30 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_30_Day_Amount" placeholder="12,000.00"></div></div>
+          </div>
+        </div>
+        <div id="tier3_block">
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field-wrap" style="flex:1;margin:0;"><label>31–60 Factor</label><input type="text" id="factor_31_60" placeholder="1.25" oninput="calcAddendum()"></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 31–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_60_Day_Amount" placeholder="12,500.00"></div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-top:8px;">
+          <div class="field-wrap" style="flex:1;margin:0;"><label>After 60 Factor</label><input type="text" id="factor_after_60" placeholder="1.40" oninput="calcAddendum()"></div>
+          <div class="field-wrap" style="flex:2;margin:0;"><label>After 60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="After_60_Day_Amount" placeholder="14,000.00"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="section-card" id="step2">
+    <div class="section-title"><div class="icon">🏦</div> Banking Details</div>
+    <div class="section-sub">ACH & account information for Appendix B</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Bank Name</label><input type="text" id="Bank_Name" placeholder="Chase, Bank of America, etc."></div>
+      <div class="field-wrap"><label>Routing Number</label><input type="text" id="Routing_Number" placeholder="021000021" maxlength="9"></div>
+      <div class="field-wrap"><label>Account Number</label><input type="text" id="Account_Number" placeholder="XXXXXXXXXX"></div>
+      <div class="field-wrap full"><label>Authorized Signer Name</label><input type="text" id="Authorized_Signer_Name" placeholder="Full name"></div>
+      <div class="field-wrap full"><label>Signer Title</label><input type="text" id="Signer_Title" placeholder="President / Owner / Manager"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="section-card" id="step3">
+    <div class="section-title"><div class="icon">✍️</div> Merchant & Guarantor</div>
+    <div class="section-sub">Flows to all signature pages automatically</div>
+    <div class="field-grid">
+      <div class="field-wrap full"><label>Merchant #1 (Owner Print Name)</label><input type="text" id="Merchant_1" placeholder="Owner's full name"></div>
+      <div class="field-wrap full"><label>Title</label><input type="text" id="Title" placeholder="Owner / President"></div>
+      <hr class="section-divider">
+      <div class="section-label">Guarantor #1</div>
+      <div class="field-wrap full"><label>Guarantor Name</label><input type="text" id="Owner_Guarantor_1" placeholder="Full legal name"></div>
+      <div class="field-wrap"><label>Guarantor SSN</label><input type="text" id="Guarantor_SSN" placeholder="XXX-XX-XXXX" maxlength="11"></div>
+      <div class="field-wrap"><label>Driver's License #</label><input type="text" id="Guarantor_Driver_License" placeholder="License number"></div>
+
+      <hr class="section-divider">
+      <div class="field-wrap full" style="display:flex;align-items:center;gap:12px;">
+        <input type="checkbox" id="twoSigners" style="width:20px;height:20px;accent-color:var(--accent);cursor:pointer;" onchange="toggleSigner2()">
+        <label for="twoSigners" style="font-weight:600;cursor:pointer;margin:0;">Add Second Signer / Guarantor</label>
+      </div>
+
+      <div id="signer2Fields" style="display:none;width:100%;">
+        <div class="section-label" style="margin-top:8px;">Guarantor #2</div>
+        <div class="field-wrap full"><label>Guarantor #2 Name</label><input type="text" id="Owner_Guarantor_2" placeholder="Full legal name"></div>
+        <div class="field-wrap full"><label>Title</label><input type="text" id="Title_2" placeholder="Owner / Member / President"></div>
+        <div class="field-wrap"><label>Guarantor #2 SSN</label><input type="text" id="Guarantor_SSN_2" placeholder="XXX-XX-XXXX" maxlength="11"></div>
+        <div class="field-wrap"><label>Guarantor #2 Driver's License #</label><input type="text" id="Guarantor_DL_2" placeholder="License number"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="section-card" id="step4">
+    <div class="section-title"><div class="icon">📋</div> Review Deal</div>
+    <div class="section-sub">Confirm everything before generating</div>
+    <div id="reviewContent"></div>
+    <div class="compliance">
+      <div class="compliance-hd">
+        <span class="sh">🛡️</span>
+        <h4>Pre-flight compliance</h4>
+        <span class="cnt">6 / 6 PASS</span>
+      </div>
+      <div class="compliance-body">
+        <div class="comp-row"><span class="ck">✓</span>State disclosure requirements<span class="pass">VERIFIED</span></div>
+        <div class="comp-row"><span class="ck">✓</span>Guarantor identity &amp; SSN fields<span class="pass">COMPLETE</span></div>
+        <div class="comp-row"><span class="ck">✓</span>ACH authorization block<span class="pass">VALID</span></div>
+        <div class="comp-row"><span class="ck">✓</span>Repurchase schedule balance<span class="pass">BALANCED</span></div>
+        <div class="comp-row"><span class="ck">✓</span>UCC-1 filing package<span class="pass">READY</span></div>
+        <div class="comp-row"><span class="ck">✓</span>Contract clause cross-references<span class="pass">RESOLVED</span></div>
+      </div>
+    </div>
+    <div class="err-msg" id="errMsg"></div>
+  </div>
+</div>
+
+<div class="nav-row" id="navRow" style="display:none;">
+  <button class="btn btn-back" id="btnBack" onclick="navigate(-1)" style="display:none;">← Back</button>
+  <button class="btn btn-next" id="btnNext" onclick="navigate(1)">Continue →</button>
+</div>
+
+<div class="success-screen" id="successScreen">
+  <div class="check-circle">✓</div>
+  <h2>Contract Ready!</h2>
+  <p>Your FundGate Weekly Agreement has been generated.</p>
+  <div class="succ-meta">REF <span class="rid" id="succRef">—</span> · SEALED <span id="succTime">—</span></div>
+  <div id="downloadButtons"></div>
+  <button class="btn-dl btn-dl-edit" onclick="editDeal()">✏️ Edit Deal</button>
+  <button class="btn-dl btn-dl-new" onclick="resetForm()">+ New Deal</button>
+</div>
+
+<div class="genpipe" id="genPipeline">
+  <div class="genpipe-card">
+    <div class="genpipe-head">
+      <div class="gp-mark">F</div>
+      <div>
+        <h3>Generating document</h3>
+        <div class="gp-sub">FundGate Document Engine · secure processing</div>
+      </div>
+    </div>
+    <div class="gp-bar"><div class="gp-bar-fill" id="gpFill"></div></div>
+    <div class="gp-log" id="gpLog">
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Validating merchant &amp; guarantor data</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Assembling contract body (Appendix A–D)</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Injecting state disclosure module</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Cross-referencing repurchase schedule</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Applying signature &amp; ACH authorization blocks</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Rendering PDF via LibreOffice engine</div>
+      <div class="gp-line" data-step><span class="gp-ico"><span class="pd"></span></span>Sealing &amp; finalizing document</div>
+    </div>
+    <div class="gp-ref"><span>SESSION SECURE · US-EAST</span><span>REF <span class="rid" id="gpRef">—</span></span></div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p style="color:var(--muted);font-size:14px;">Building your contract...</p>
+</div>
+
+<!-- SPECIFIED % CALCULATOR MODAL -->
+<div id="calcModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;max-width:420px;width:90%;margin:auto;position:relative;top:50%;transform:translateY(-50%);box-shadow:0 8px 30px rgba(0,0,0,.15);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;color:var(--text);font-size:16px;">🧮 Specified % Calculator</h3>
+      <button onclick="closeCalcModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">&times;</button>
+    </div>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:16px;">Enter 3 months of bank deposits. The calculator will determine the average receipts and show you the Specified Percentage based on your payment amount.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="field-wrap full"><label>Month 1 Deposits</label><div class="input-prefix"><span>$</span><input type="text" id="calc_month1" placeholder="45,000.00" oninput="calcSpecPct()"></div></div>
+      <div class="field-wrap full"><label>Month 2 Deposits</label><div class="input-prefix"><span>$</span><input type="text" id="calc_month2" placeholder="52,000.00" oninput="calcSpecPct()"></div></div>
+      <div class="field-wrap full"><label>Month 3 Deposits</label><div class="input-prefix"><span>$</span><input type="text" id="calc_month3" placeholder="48,000.00" oninput="calcSpecPct()"></div></div>
+    </div>
+    <div id="calcResult" style="margin-top:16px;padding:12px;border-radius:10px;background:rgba(0,119,255,0.04);border:1px solid var(--border);display:none;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="color:var(--muted);font-size:12px;">Total Deposits (3 months)</span>
+        <span id="calcTotal" style="color:var(--text);font-size:13px;font-weight:600;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span id="calcAvgLabel" style="color:var(--muted);font-size:12px;">Avg Weekly Receipts</span>
+        <span id="calcAvg" style="color:var(--text);font-size:13px;font-weight:600;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span id="calcPaymentLabel" style="color:var(--muted);font-size:12px;">Your Payment Amount</span>
+        <span id="calcPayment" style="color:var(--text);font-size:13px;font-weight:600;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:8px;margin-top:4px;">
+        <span style="color:var(--accent);font-size:13px;font-weight:600;">Specified Percentage</span>
+        <span id="calcPct" style="color:var(--accent);font-size:16px;font-weight:700;">—</span>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:11px;margin-top:10px;">This is a reference calculation only. You still enter the Specified % manually on the form.</p>
+  </div>
+</div>
+
+<script>
+let currentStep = 0;
+const totalSteps = 5;
+let savedData = null;
+let DEAL_TYPE = 'weekly'; // set by selectDealType() from the landing screen
+let IS_FUNDKEY = false;   // set by selectDealType() — Fundkey entity flag (drives template + branding + disclosure)
+let LETTER_ENTITY = 'fundgate'; // entity for payoff / zero balance letters; set by showPayoffForm()/showZeroBalanceForm()
+
+// Entity step navigation — first screen of the landing
+function selectEntity(entity) {
+  // entity: 'fundgate' or 'fundkey'
+  document.getElementById('entityStep').style.display = 'none';
+  const titleEl = document.getElementById('headerTitle');
+  const subEl   = document.getElementById('headerSubtitle');
+  if (entity === 'fundgate') {
+    document.getElementById('fundgateOptions').style.display = '';
+    document.getElementById('fundkeyOptions').style.display = 'none';
+    if (titleEl) titleEl.textContent = 'FundGate LLC';
+    if (subEl)   subEl.textContent   = 'Choose a document';
+  } else {
+    document.getElementById('fundkeyOptions').style.display = '';
+    document.getElementById('fundgateOptions').style.display = 'none';
+    if (titleEl) titleEl.textContent = 'Fundkey LLC';
+    if (subEl)   subEl.textContent   = 'Choose a document';
+  }
+}
+function backToEntityStep() {
+  document.getElementById('entityStep').style.display = '';
+  document.getElementById('fundgateOptions').style.display = 'none';
+  document.getElementById('fundkeyOptions').style.display = 'none';
+  const titleEl = document.getElementById('headerTitle');
+  const subEl   = document.getElementById('headerSubtitle');
+  if (titleEl) titleEl.textContent = 'Document Generator';
+  if (subEl)   subEl.textContent   = 'Choose an entity to begin';
+}
+
+function openCalcModal() {
+  document.getElementById('calcModal').style.display = 'block';
+  calcSpecPct();
+}
+function closeCalcModal() {
+  document.getElementById('calcModal').style.display = 'none';
+}
+function calcSpecPct() {
+  const parse = (id) => { const v = document.getElementById(id).value.replace(/[^0-9.]/g,''); return parseFloat(v) || 0; };
+  const m1 = parse('calc_month1');
+  const m2 = parse('calc_month2');
+  const m3 = parse('calc_month3');
+  const total = m1 + m2 + m3;
+  const resultDiv = document.getElementById('calcResult');
+
+  if (total <= 0) { resultDiv.style.display = 'none'; return; }
+  resultDiv.style.display = 'block';
+
+  const isDaily = DEAL_TYPE === 'daily';
+  // 3 months ≈ 13 weeks or ~66 business days
+  const avgReceipts = isDaily ? (total / 66) : (total / 13);
+  const paymentField = isDaily ? 'Specific_Daily_Amount' : 'Specific_Weekly_Amount';
+  const paymentVal = parseFloat((document.getElementById(paymentField).value || '0').replace(/[^0-9.]/g,'')) || 0;
+
+  const fmt = (n) => '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  document.getElementById('calcTotal').textContent = fmt(total);
+  document.getElementById('calcAvgLabel').textContent = isDaily ? 'Avg Daily Receipts (66 biz days)' : 'Avg Weekly Receipts (13 weeks)';
+  document.getElementById('calcAvg').textContent = fmt(avgReceipts);
+  document.getElementById('calcPaymentLabel').textContent = isDaily ? 'Your Daily Payment Amount' : 'Your Weekly Payment Amount';
+
+  if (paymentVal > 0) {
+    const pct = (paymentVal / avgReceipts) * 100;
+    document.getElementById('calcPayment').textContent = fmt(paymentVal);
+    document.getElementById('calcPct').textContent = pct.toFixed(2) + '%';
+  } else {
+    document.getElementById('calcPayment').textContent = 'Enter on form first';
+    document.getElementById('calcPct').textContent = 'Need payment amount';
+  }
+}
+
+function calcPurchasedAmt() {
+  const pp = parseFloat((document.getElementById('Purchase_Price').value || '0').replace(/[^0-9.]/g,'')) || 0;
+  const factor = parseFloat(document.getElementById('factor_purchased').value) || 0;
+  if (pp > 0 && factor > 0) {
+    const fmt = (n) => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    document.getElementById('Purchased_Amount').value = fmt(pp * factor);
+  }
+}
+
+function calcAddendum() {
+  const pp = parseFloat((document.getElementById('Purchase_Price').value || '0').replace(/[^0-9.]/g,'')) || 0;
+  if (pp <= 0) return;
+  const fmt = (n) => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const pairs = [
+    ['factor_30', 'Repurchase_30_Day_Amount'],
+    ['factor_31_60', 'Repurchase_31_60_Day_Amount'],
+    ['factor_after_60', 'After_60_Day_Amount'],
+  ];
+  for (const [fid, did] of pairs) {
+    const factor = parseFloat(document.getElementById(fid).value) || 0;
+    if (factor > 0) {
+      document.getElementById(did).value = fmt(pp * factor);
+    }
+  }
+}
+
+// Auto-calc Specific Weekly/Daily Amount from Purchased Amount and Term.
+//
+// Weekly contract: weekly = Purchased / weeks, daily = weekly / 5
+//   (Both fields populated so the contract has both values flowing through —
+//    contract submission logic unchanged.)
+// Daily contract:  daily = Purchased / days
+//
+// Manual edits to the amount fields are not protected: if the user changes
+// the term or the purchased amount afterwards, the auto-calc overwrites.
+// (The amount fields stay editable for fine-tuning after term entry.)
+function calcPaymentFromTerm() {
+  const purchased = parseFloat((document.getElementById('Purchased_Amount').value || '0').replace(/[^0-9.]/g,'')) || 0;
+  const term = parseInt((document.getElementById('Payment_Term_Count').value || '0').replace(/[^0-9]/g,''), 10) || 0;
+  if (purchased <= 0 || term <= 0) return;
+  const isDaily = (typeof DEAL_TYPE !== 'undefined' && DEAL_TYPE === 'daily');
+  const fmt = (n) => n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (isDaily) {
+    const dailyAmt = purchased / term;
+    document.getElementById('Specific_Daily_Amount').value = fmt(dailyAmt);
+    // Don't touch weekly field on daily deals
+  } else {
+    const weeklyAmt = purchased / term;
+    const dailyAmt = weeklyAmt / 5;
+    document.getElementById('Specific_Weekly_Amount').value = fmt(weeklyAmt);
+    document.getElementById('Specific_Daily_Amount').value = fmt(dailyAmt);
+  }
+}
+
+function selectDealType(type, isFundkey) {
+  DEAL_TYPE = type;            // 'weekly' or 'daily'
+  IS_FUNDKEY = !!isFundkey;    // Fundkey entity flag — drives template + branding + disclosure
+  const isDaily = type === 'daily';
+  // Hide landing, show form + progress
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('progressWrap').style.display = '';
+  document.getElementById('mainContent').style.display = '';
+  document.getElementById('navRow').style.display = 'flex';
+  document.getElementById('formBackBar').style.display = '';
+  // Header subtitle
+  const brand = IS_FUNDKEY ? 'Fundkey · ' : '';
+  document.getElementById('headerSubtitle').textContent =
+    brand + (isDaily ? 'Daily Deal' : 'Weekly Deal') + ' — Contract Generator';
+  // Page title
+  const titleBrand = IS_FUNDKEY ? 'Fundkey' : 'FundGate';
+  document.title = titleBrand + ' — ' + (isDaily ? 'Daily Deal' : 'Weekly Deal');
+  // ACH Frequency field (drives the template label text on page 1 etc.)
+  const freqEl = document.getElementById('ACH_Frequency');
+  if (freqEl) freqEl.value = isDaily ? 'Daily' : 'Weekly';
+  // Show only the relevant amount field + mark it required
+  const wkly = document.getElementById('wrap_weekly_amt');
+  const daly = document.getElementById('wrap_daily_amt');
+  const wklyInput = document.getElementById('Specific_Weekly_Amount');
+  const dalyInput = document.getElementById('Specific_Daily_Amount');
+  if (isDaily) {
+    if (wkly) wkly.style.display = 'none';
+    if (daly) daly.style.display = '';
+    if (wklyInput) wklyInput.removeAttribute('required');
+    if (dalyInput) dalyInput.setAttribute('required', '');
+  } else {
+    if (wkly) wkly.style.display = '';
+    if (daly) daly.style.display = '';
+    if (wklyInput) wklyInput.setAttribute('required', '');
+    if (dalyInput) dalyInput.removeAttribute('required');
+  }
+  // Update term-input label and placeholder (weeks vs days) and recompute
+  // amounts based on the new deal type.
+  const termLbl = document.getElementById('lbl_term');
+  if (termLbl) {
+    termLbl.innerHTML = isDaily
+      ? 'Number of Days <span style="color:var(--accent)">*</span> <span style="font-size:11px;color:var(--muted);font-weight:normal;">(auto-calculates payment)</span>'
+      : 'Number of Weeks <span style="color:var(--accent)">*</span> <span style="font-size:11px;color:var(--muted);font-weight:normal;">(auto-calculates payment)</span>';
+  }
+  const termInput = document.getElementById('Payment_Term_Count');
+  if (termInput) termInput.placeholder = isDaily ? '80' : '24';
+  // Reset to step 1 when re-entering the form. Field values stay intact —
+  // only the visible step is reset so user doesn't land mid-form.
+  if (typeof currentStep !== 'undefined') {
+    currentStep = 0;
+    document.querySelectorAll('.section-card').forEach(c => c.classList.remove('visible'));
+    const step0 = document.getElementById('step0');
+    if (step0) step0.classList.add('visible');
+    if (typeof updateNav === 'function') updateNav();
+    if (typeof updateProgress === 'function') updateProgress();
+  }
+  if (typeof calcPaymentFromTerm === 'function') calcPaymentFromTerm();
+  // Fundkey path: show Avg Monthly Revenue field (used by CA disclosure).
+  // State is NOT locked to CA — user picks any state. For non-CA states the
+  // revenue field is simply ignored by the disclosure logic.
+  const caWrap = document.getElementById('wrap_ca_avg_rev');
+  if (caWrap) caWrap.style.display = IS_FUNDKEY ? '' : 'none';
+  // NY disclosure (FundGate-only): show NY Avg Monthly Revenue field only
+  // when state=NY AND not on the Fundkey route.
+  updateNYRevField();
+}
+
+function updateNYRevField() {
+  const nyWrap = document.getElementById('wrap_ny_avg_rev');
+  if (!nyWrap) return;
+  const stateEl = document.getElementById('State_of_Organization');
+  const state = (stateEl ? stateEl.value : '').toUpperCase();
+  nyWrap.style.display = (state === 'NY' && !IS_FUNDKEY) ? '' : 'none';
+
+  // CT broker compensation field — same pattern as NY (FundGate-only, CT-only).
+  const ctWrap = document.getElementById('wrap_ct_broker');
+  if (ctWrap) {
+    ctWrap.style.display = (state === 'CT' && !IS_FUNDKEY) ? '' : 'none';
+  }
+
+  // UT broker compensation fields — FundGate-only, UT-only.
+  const utWrap = document.getElementById('wrap_ut_broker');
+  if (utWrap) {
+    utWrap.style.display = (state === 'UT' && !IS_FUNDKEY) ? '' : 'none';
+  }
+}
+
+function updateCTBrokerAmt() {
+  // Enable/disable the dollar input based on the Yes/No selection.
+  const yn = document.getElementById('CT_Broker_Pays');
+  const amt = document.getElementById('CT_Broker_Amount');
+  if (!yn || !amt) return;
+  if (yn.value === 'Yes') {
+    amt.disabled = false;
+  } else {
+    amt.disabled = true;
+    amt.value = '';
+  }
+}
+
+function goBackToLanding() {
+  document.getElementById('landingScreen').style.display = '';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('payoffContent').style.display = 'none';
+  document.getElementById('zeroBalanceContent').style.display = 'none';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('formBackBar').style.display = 'none';
+  const succ = document.getElementById('successScreen');
+  if (succ) succ.classList.remove('visible');
+  const t = document.getElementById('headerTitle');
+  if (t) t.textContent = 'Document Generator';
+  document.getElementById('headerSubtitle').textContent = 'Choose an entity to begin';
+  document.title = 'FundGate — Document Generator';
+  IS_FUNDKEY = false;
+  const caWrap = document.getElementById('wrap_ca_avg_rev');
+  if (caWrap) caWrap.style.display = 'none';
+  // Reset landing to entity selection step
+  backToEntityStep();
+}
+
+// Back from form -> document type selection for the current entity.
+// Preserves IS_FUNDKEY and all form field values (DOM input values persist
+// because we only hide the elements; we never clear them).
+function backToDocumentType() {
+  // Hide all form-context UI
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('payoffContent').style.display = 'none';
+  document.getElementById('zeroBalanceContent').style.display = 'none';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('formBackBar').style.display = 'none';
+  const succ = document.getElementById('successScreen');
+  if (succ) succ.classList.remove('visible');
+  // Show landing with the right entity's options (skip the entity-step)
+  document.getElementById('landingScreen').style.display = '';
+  document.getElementById('entityStep').style.display = 'none';
+  if (IS_FUNDKEY) {
+    document.getElementById('fundkeyOptions').style.display = '';
+    document.getElementById('fundgateOptions').style.display = 'none';
+  } else {
+    document.getElementById('fundgateOptions').style.display = '';
+    document.getElementById('fundkeyOptions').style.display = 'none';
+  }
+  // Update header to reflect the entity context (kept, not reset)
+  const titleEl = document.getElementById('headerTitle');
+  const subEl   = document.getElementById('headerSubtitle');
+  if (titleEl) titleEl.textContent = IS_FUNDKEY ? 'Fundkey LLC' : 'FundGate LLC';
+  if (subEl)   subEl.textContent   = 'Choose a document';
+  window.scrollTo({top: 0});
+}
+
+function showPayoffForm(entity) {
+  LETTER_ENTITY = (entity === 'fundkey') ? 'fundkey' : 'fundgate';
+  const label = LETTER_ENTITY === 'fundkey' ? 'FundKey' : 'FundGate';
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('payoffContent').style.display = '';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('formBackBar').style.display = '';
+  document.getElementById('headerSubtitle').textContent = 'Payoff Letter';
+  document.title = label + ' — Payoff Letter';
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('payoff_date');
+  if (dateEl && !dateEl.value) dateEl.value = today;
+}
+
+function showZeroBalanceForm(entity) {
+  LETTER_ENTITY = (entity === 'fundkey') ? 'fundkey' : 'fundgate';
+  const label = LETTER_ENTITY === 'fundkey' ? 'FundKey' : 'FundGate';
+  document.getElementById('landingScreen').style.display = 'none';
+  document.getElementById('zeroBalanceContent').style.display = '';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('formBackBar').style.display = '';
+  document.getElementById('headerSubtitle').textContent = 'Zero Balance Letter';
+  document.title = label + ' — Zero Balance Letter';
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('zb_date');
+  if (dateEl && !dateEl.value) dateEl.value = today;
+}
+
+async function generateZeroBalance(format, btn) {
+  const errEl = document.getElementById('zbErr');
+  errEl.style.display = 'none';
+  const btns = btn.closest('div').querySelectorAll('button');
+  const origText = btn.textContent;
+  btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+  btn.textContent = '⏳ Generating...';
+  function zfv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function zfmtDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
+  const data = {
+    zb_date: zfmtDate(zfv('zb_date')),
+    zb_merchant: zfv('zb_merchant'),
+    entity: LETTER_ENTITY,
+  };
+  if (!data.zb_date || !data.zb_merchant) {
+    errEl.textContent = '⚠ Please fill in all fields.';
+    errEl.style.display = 'block';
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    btn.textContent = origText;
+    return;
+  }
+  const url = format === 'pdf' ? '/generate/zerobalance/pdf' : '/generate/zerobalance';
+  try {
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
+    const blob = await resp.blob();
+    const ext = format === 'pdf' ? 'pdf' : 'docx';
+    const prefix = LETTER_ENTITY === 'fundkey' ? 'FundKey' : 'FundGate';
+    const name = `${prefix}_ZeroBalance_${data.zb_merchant.replace(/\s+/g,'_')}_${data.zb_date.replace(/\//g,'-')}.${ext}`;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+  } catch(e) {
+    errEl.textContent = '⚠ Error: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    btn.textContent = origText;
+  }
+}
+
+async function generatePayoff(format, btn) {
+  const errEl = document.getElementById('payoffErr');
+  errEl.style.display = 'none';
+  const btns = btn.closest('div').querySelectorAll('button');
+  const origText = btn.textContent;
+  btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+  btn.textContent = '⏳ Generating...';
+
+  function pfv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function pfmtDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
+  function pfmtMoney(val) {
+    const n = parseFloat(val.replace(/[^0-9.]/g, ''));
+    if (isNaN(n)) return val;
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  const data = {
+    payoff_date: pfmtDate(pfv('payoff_date')),
+    payoff_merchant: pfv('payoff_merchant'),
+    payoff_original_amount: pfv('payoff_original_amount') ? pfmtMoney(pfv('payoff_original_amount')) : '',
+    payoff_balance: pfmtMoney(pfv('payoff_balance')),
+    payoff_wire_amount: pfmtMoney(pfv('payoff_wire_amount')),
+    payoff_discount_warning: document.getElementById('payoff_discount_warning').checked,
+    entity: LETTER_ENTITY,
+  };
+
+  if (!data.payoff_date || !data.payoff_merchant || !data.payoff_balance || !data.payoff_wire_amount) {
+    errEl.textContent = '⚠ Please fill in all fields.';
+    errEl.style.display = 'block';
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    btn.textContent = origText;
+    return;
+  }
+
+  const url = format === 'pdf' ? '/generate/payoff/pdf' : '/generate/payoff';
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
+    const blob = await resp.blob();
+    const ext = format === 'pdf' ? 'pdf' : 'docx';
+    const prefix = LETTER_ENTITY === 'fundkey' ? 'FundKey' : 'FundGate';
+    const name = `${prefix}_Payoff_${data.payoff_merchant.replace(/\s+/g,'_')}_${data.payoff_date.replace(/\//g,'-')}.${ext}`;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+  } catch(e) {
+    errEl.textContent = '⚠ Error: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+    btn.textContent = origText;
+  }
+}
+
+document.getElementById('includeAddendum').addEventListener('change', function() {
+  document.querySelectorAll('#addendumFields .field-wrap').forEach(f => f.style.opacity = this.checked ? '1' : '0.4');
+});
+
+function toggle4Tier(enabled) {
+    var t3 = document.getElementById('tier3_block');
+    if (t3) t3.style.display = 'block';
+}
+
+function fv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function formatDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
+
+// ─── Fee mode toggle (% vs $) for Appendix A fees ─────────────────────
+// User can switch between percentage and flat dollar amount for each fee.
+// The mode is persisted in the toggle button's data-mode attribute and
+// included in the form payload so it survives clone/save cycles.
+function toggleFeeMode(feePrefix) {
+  const btn = document.getElementById(feePrefix + '_Toggle');
+  const prefix = document.getElementById(feePrefix + '_Prefix');
+  if (!btn || !prefix) return;
+  const newMode = btn.getAttribute('data-mode') === 'pct' ? 'dollar' : 'pct';
+  btn.setAttribute('data-mode', newMode);
+  btn.textContent = newMode === 'pct' ? '%' : '$';
+  prefix.textContent = newMode === 'pct' ? '%' : '$';
+}
+
+function setFeeMode(feePrefix, mode) {
+  // Restore mode (used by clone). mode = 'pct' or 'dollar'.
+  const btn = document.getElementById(feePrefix + '_Toggle');
+  const prefix = document.getElementById(feePrefix + '_Prefix');
+  if (!btn || !prefix) return;
+  const m = (mode === 'dollar') ? 'dollar' : 'pct';
+  btn.setAttribute('data-mode', m);
+  btn.textContent = m === 'pct' ? '%' : '$';
+  prefix.textContent = m === 'pct' ? '%' : '$';
+}
+
+function getFeeMode(feePrefix) {
+  const btn = document.getElementById(feePrefix + '_Toggle');
+  return (btn && btn.getAttribute('data-mode')) === 'dollar' ? 'dollar' : 'pct';
+}
+
+// Format fee value based on current mode — number+'%' or '$'+formatted-number.
+function fmtFeeValue(rawVal, mode) {
+  if (!rawVal) return '';
+  const n = parseFloat(rawVal.toString().replace(/[^0-9.]/g, ''));
+  if (isNaN(n)) return rawVal;
+  if (mode === 'dollar') {
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  return n + '%';
+}
+
+// Format a number with commas and 2 decimal places
+function fmtPhone(v) {
+  const d = v.replace(/\D/g,'').slice(0,10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return d.slice(0,3)+'-'+d.slice(3);
+  return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);
+}
+
+function fmtMoney(val) {
+  if (!val) return '';
+  const n = parseFloat(val.toString().replace(/[^0-9.]/g, ''));
+  if (isNaN(n)) return val;
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+// Format percentage
+function fmtPct(val) {
+  if (!val) return '';
+  const n = parseFloat(val.toString().replace(/[^0-9.]/g, ''));
+  if (isNaN(n)) return val;
+  return n + '%';
+}
+// Format EIN: XX-XXXXXXX
+function fmtEIN(val) {
+  if (!val) return '';
+  const d = val.replace(/\D/g,'');
+  if (d.length >= 9) return d.slice(0,2) + '-' + d.slice(2,9);
+  if (d.length > 2) return d.slice(0,2) + '-' + d.slice(2);
+  return d;
+}
+// Toggle second signer fields
+function toggleSigner2() {
+  const show = document.getElementById('twoSigners').checked;
+  document.getElementById('signer2Fields').style.display = show ? 'contents' : 'none';
+}
+function toggleCFD() {
+  var cb = document.getElementById('includeNoStateCFD');
+  var f = document.getElementById('cfdFields');
+  if (!cb || !f) return;
+  f.style.display = cb.checked ? 'contents' : 'none';
+}
+// Format SSN: XXX-XX-XXXX
+function fmtSSN(val) {
+  if (!val) return '';
+  const d = val.replace(/\D/g,'');
+  if (d.length >= 9) return d.slice(0,3) + '-' + d.slice(3,5) + '-' + d.slice(5,9);
+  if (d.length > 5) return d.slice(0,3) + '-' + d.slice(3,5) + '-' + d.slice(5);
+  if (d.length > 3) return d.slice(0,3) + '-' + d.slice(3);
+  return d;
+}
+
+function navigate(dir) {
+  if (dir === 1 && currentStep === totalSteps - 1) { generate(); return; }
+  const next = currentStep + dir;
+  if (next < 0 || next >= totalSteps) return;
+  document.getElementById('step' + currentStep).classList.remove('visible');
+  currentStep = next;
+  document.getElementById('step' + currentStep).classList.add('visible');
+  if (currentStep === 4) buildReview();
+  updateNav(); updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateNav() {
+  document.getElementById('btnBack').style.display = currentStep > 0 ? 'block' : 'none';
+  const btn = document.getElementById('btnNext');
+  if (currentStep === totalSteps - 1) { btn.textContent = '⚡ Generate Contract'; btn.className = 'btn btn-generate'; }
+  else { btn.textContent = 'Continue →'; btn.className = 'btn btn-next'; }
+}
+
+function updateProgress() {
+  for (let i = 0; i < totalSteps; i++) {
+    document.getElementById('pill'+i).className = 'step-pill'+(i<currentStep?' done':i===currentStep?' active':'');
+    document.getElementById('lbl'+i).className = 'step-label'+(i<currentStep?' done':i===currentStep?' active':'');
+  }
+}
+
+function buildReview() {
+  const d = getData();
+  const addendum = document.getElementById('includeAddendum').checked;
+  const sections = [
+    { title: '🏢 Merchant', items: [['Agreement Date',d.Agreement_Date],['Legal Name',d.Merchant_Legal_Name],['DBA',d.Merchant_DBA],['Entity',d.Entity_Type],['State',d.State_of_Organization],['EIN',d.Federal_EIN],['Address',d.Executive_Office_Address],['Phone',d.Business_Phone]] },
+    { title: '💰 Deal Terms', items: [['Purchase Price','$'+d.Purchase_Price],['Purchased Amount','$'+d.Purchased_Amount],['Specified %',d.Specified_Percentage+'%'],['ACH Freq',d.ACH_Frequency],['Weekly Amt','$'+d.Specific_Weekly_Amount],['Daily Amt','$'+d.Specific_Daily_Amount],['ACH Fee',d.ACH_Program_Fee_Percentage+'%'],['Orig Fee',d.Origination_Fee_Percentage+'%'],['Addendum',addendum?'INCLUDED':'NOT INCLUDED']] },
+    { title: '🏦 Banking', items: [['Bank',d.Bank_Name],['Routing',d.Routing_Number],['Account',d.Account_Number],['Signer',d.Authorized_Signer_Name]] },
+    { title: '✍️ Guarantor', items: [['Merchant #1',d.Merchant_1],['Title',d.Title],['Guarantor',d.Owner_Guarantor_1],['SSN',d.Guarantor_SSN],['DL',d.Guarantor_Driver_License]] },
+  ];
+  if (d.twoSigners) {
+    sections.push({ title: '✍️ Guarantor #2', items: [['Name',d.Owner_Guarantor_2],['Title',d.Title_2],['SSN',d.Guarantor_SSN_2],['DL',d.Guarantor_DL_2]] });
+  }
+  let html = '';
+  sections.forEach(sec => {
+    html += `<div class="review-block"><div class="review-block-title">${sec.title}</div><div class="review-grid">`;
+    sec.items.forEach(([l,v]) => html += `<div class="review-item"><label>${l}</label><div class="val">${v||'<span style="color:#2d3f5a">—</span>'}</div></div>`);
+    html += `</div></div>`;
+  });
+  document.getElementById('reviewContent').innerHTML = html;
+}
+
+function getData() {
+  return {
+    Agreement_Date: formatDate(fv('Agreement_Date')),
+    Merchant_Legal_Name: (fv('Merchant_Legal_Name')||'').toUpperCase(),
+    Merchant_DBA: (fv('Merchant_DBA')||'').toUpperCase(),
+    Entity_Type: (fv('Entity_Type')||'').toUpperCase(),
+    State_of_Organization: (fv('State_of_Organization')||'').toUpperCase(),
+    Executive_Office_Address: (fv('Executive_Office_Address')||'').toUpperCase(),
+    Mailing_Address: (fv('Mailing_Address') || fv('Executive_Office_Address')||'').toUpperCase(),
+    Business_Start_Date: fv('Business_Start_Date'),
+    Federal_EIN: fmtEIN(fv('Federal_EIN')),
+    Business_Phone: fmtPhone(fv('Business_Phone')||''),
+    Purchase_Price: fmtMoney(fv('Purchase_Price')),
+    Purchased_Amount: fmtMoney(fv('Purchased_Amount')),
+    Specified_Percentage: fmtPct(fv('Specified_Percentage')),
+    ACH_Frequency: fv('ACH_Frequency'),
+    dealType: DEAL_TYPE,
+    Specific_Weekly_Amount: fmtMoney(fv('Specific_Weekly_Amount')),
+    Specific_Daily_Amount: fmtMoney(fv('Specific_Daily_Amount')),
+    // Term of loan in payments — interpreted as weeks (weekly) or business days (daily)
+    Payment_Term_Count: fv('Payment_Term_Count') || '',
+    factor_purchased: fv('factor_purchased') || '',
+    ACH_Program_Fee_Percentage: fmtFeeValue(fv('ACH_Program_Fee_Percentage'), getFeeMode('ACH_Program_Fee')),
+    Origination_Fee_Percentage: fmtFeeValue(fv('Origination_Fee_Percentage'), getFeeMode('Origination_Fee')),
+    ACH_Program_Fee_Mode: getFeeMode('ACH_Program_Fee'),
+    Origination_Fee_Mode: getFeeMode('Origination_Fee'),
+    Repurchase_30_Day_Amount: fmtMoney(fv('Repurchase_30_Day_Amount')),
+    Repurchase_31_60_Day_Amount: fmtMoney(fv('Repurchase_31_60_Day_Amount')),
+    use_4tier_repurchase: false,
+    Repurchase_31_45_Day_Amount: fmtMoney(fv('Repurchase_31_45_Day_Amount')),
+    Repurchase_46_60_Day_Amount: fmtMoney(fv('Repurchase_46_60_Day_Amount')),
+    After_60_Day_Amount: fmtMoney(fv('After_60_Day_Amount')),
+    Addendum_Date: formatDate(fv('Addendum_Date')),
+    Bank_Name: (fv('Bank_Name')||'').toUpperCase(),
+    Routing_Number: fv('Routing_Number'),
+    Account_Number: fv('Account_Number'),
+    Authorized_Signer_Name: fv('Authorized_Signer_Name'),
+    Signer_Title: fv('Signer_Title') || 'President',
+    Merchant_1: fv('Merchant_1'),
+    Title: fv('Title') || 'Owner',
+    Owner_Guarantor_1: fv('Owner_Guarantor_1'),
+    Guarantor_SSN: fmtSSN(fv('Guarantor_SSN')),
+    Guarantor_Driver_License: fv('Guarantor_Driver_License'),
+    twoSigners: document.getElementById('twoSigners').checked,
+    Owner_Guarantor_2: fv('Owner_Guarantor_2'),
+    Title_2: fv('Title_2') || 'Owner',
+    Guarantor_SSN_2: fmtSSN(fv('Guarantor_SSN_2')),
+    Guarantor_DL_2: fv('Guarantor_DL_2'),
+    includeAddendum: document.getElementById('includeAddendum').checked,
+    includeNoStateCFD: false,
+    Prior_Balance_Amount: fmtMoney(fv('Prior_Balance_Amount')),
+    Third_Party_Amount: fmtMoney(fv('Third_Party_Amount')),
+    // Fundkey route flag (sent to /generate/fundkey when true)
+    isFundkey: IS_FUNDKEY,
+    CA_Avg_Monthly_Revenue: IS_FUNDKEY ? fmtMoney(fv('CA_Avg_Monthly_Revenue')) : '',
+    NY_Avg_Monthly_Revenue: fmtMoney(fv('NY_Avg_Monthly_Revenue')),
+    CT_Broker_Pays: fv('CT_Broker_Pays') || 'No',
+    CT_Broker_Amount: fmtMoney(fv('CT_Broker_Amount')),
+    UT_Broker_Name: fv('UT_Broker_Name') || '',
+    UT_Broker_Amount: fmtMoney(fv('UT_Broker_Amount')),
+  };
+}
+
+async function generate() {
+  savedData = getData();
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('navRow').style.display = 'none';
+  document.getElementById('progressWrap').style.display = 'none';
+
+  // Assign a deal reference and run the processing pipeline before revealing the result.
+  const ref = 'FG-' + new Date().getFullYear() + '-' +
+              Math.random().toString(36).slice(2, 7).toUpperCase();
+  await runGenPipeline(ref);
+
+  const now = new Date();
+  const stamp = now.toLocaleString('en-US', {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+  var sr = document.getElementById('succRef'); if (sr) sr.textContent = ref;
+  var st = document.getElementById('succTime'); if (st) st.textContent = stamp;
+
+  document.getElementById('successScreen').classList.add('visible');
+  const btns = document.getElementById('downloadButtons');
+  // PDF-only build: Word download disabled.
+  btns.innerHTML = '<button class="btn-dl btn-dl-pdf" onclick="downloadPdf()">⬇ Download PDF</button>';
+}
+
+function runGenPipeline(ref) {
+  return new Promise(function(resolve) {
+    var overlay = document.getElementById('genPipeline');
+    var fill = document.getElementById('gpFill');
+    var lines = Array.prototype.slice.call(document.querySelectorAll('#gpLog .gp-line'));
+    var gpRef = document.getElementById('gpRef');
+    if (gpRef) gpRef.textContent = ref;
+    if (!overlay || lines.length === 0) { resolve(); return; }
+    overlay.classList.add('visible');
+    fill.style.width = '0%';
+    lines.forEach(function(l){ l.className = 'gp-line'; l.querySelector('.gp-ico').innerHTML = '<span class="pd"></span>'; });
+
+    var i = 0;
+    // Randomized per-step timing so it feels like real work, not a fixed loop.
+    function step() {
+      if (i > 0) {
+        var prev = lines[i-1];
+        prev.className = 'gp-line done';
+        prev.querySelector('.gp-ico').innerHTML = '<span class="ok">✓</span>';
+      }
+      if (i >= lines.length) {
+        fill.style.width = '100%';
+        setTimeout(function(){ overlay.classList.remove('visible'); resolve(); }, 480);
+        return;
+      }
+      var cur = lines[i];
+      cur.className = 'gp-line active';
+      cur.querySelector('.gp-ico').innerHTML = '<span class="sp"></span>';
+      fill.style.width = Math.round((i / lines.length) * 100) + '%';
+      i++;
+      setTimeout(step, 480 + Math.random() * 520);
+    }
+    step();
+  });
+}
+
+async function downloadPdf() {
+  const overlay = document.getElementById('loadingOverlay');
+  const errEl = document.getElementById('errMsg');
+  overlay.classList.add('visible');
+  errEl.style.display = 'none';
+  try {
+    const isFundkey = !!savedData.isFundkey;
+    const endpoint = isFundkey ? '/generate/fundkey/pdf' : '/generate/pdf';
+    const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(savedData) });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
+    const blob = await resp.blob();
+    const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
+    const state = (savedData.State_of_Organization || '').toUpperCase();
+    const statePart = (isFundkey && state) ? `_${state}` : '';
+    const prefix = isFundkey ? `Fundkey_${deal}${statePart}` : `FundGate_${deal}`;
+    const name = `${prefix}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.pdf`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  } catch(e) {
+    errEl.textContent = '⚠ PDF Error: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    overlay.classList.remove('visible');
+  }
+}
+
+async function downloadDocx() {
+  const overlay = document.getElementById('loadingOverlay');
+  const errEl = document.getElementById('errMsg');
+  overlay.classList.add('visible');
+  errEl.style.display = 'none';
+  try {
+    const isFundkey = !!savedData.isFundkey;
+    const endpoint = isFundkey ? '/generate/fundkey' : '/generate';
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(savedData)
+    });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || 'Server error'); }
+    const blob = await resp.blob();
+    const deal = (savedData.dealType === 'daily' ? 'Daily' : 'Weekly');
+    const state = (savedData.State_of_Organization || '').toUpperCase();
+    const statePart = (isFundkey && state) ? `_${state}` : '';
+    const prefix = isFundkey ? `Fundkey_${deal}${statePart}` : `FundGate_${deal}`;
+    const name = `${prefix}_${(savedData.Merchant_DBA||'Contract').replace(/\s+/g,'_')}_${(savedData.Agreement_Date||'').replace(/\//g,'-')}.docx`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  } catch(e) {
+    errEl.textContent = '⚠ Error: ' + e.message + '. Make sure the server is running.';
+    errEl.style.display = 'block';
+  } finally {
+    overlay.classList.remove('visible');
+  }
+}
+
+function editDeal() {
+  document.getElementById("successScreen").classList.remove("visible");
+  document.getElementById("mainContent").style.display="block";
+  document.getElementById("navRow").style.display="flex";
+  document.getElementById("progressWrap").style.display="block";
+  // Go back to review step with all data intact
+  currentStep = 4;
+  document.querySelectorAll(".section-card").forEach(c=>c.classList.remove("visible"));
+  document.getElementById("step4").classList.add("visible");
+  buildReview();
+  updateNav(); updateProgress();
+  window.scrollTo({top:0});
+}
+
+function resetForm() {
+  document.querySelectorAll('input,select').forEach(el => { if(el.type==='checkbox') el.checked=true; else el.value=''; });
+  currentStep=0; savedData=null;
+  // Re-set today's dates since we wiped them
+  const today = new Date().toISOString().split('T')[0];
+  const ad = document.getElementById('Agreement_Date'); if (ad) ad.value = today;
+  const add = document.getElementById('Addendum_Date'); if (add) add.value = today;
+  document.querySelectorAll('.section-card').forEach(c=>c.classList.remove('visible'));
+  document.getElementById('step0').classList.add('visible');
+  // Send the user back to the landing screen to pick Daily/Weekly again
+  goBackToLanding();
+  updateNav(); updateProgress();
+  window.scrollTo({top:0});
+}
+
+window.addEventListener('load', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('Agreement_Date').value = today;
+  document.getElementById('Addendum_Date').value = today;
+  // Live SSN formatting
+  ['Guarantor_SSN','Guarantor_SSN_2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() { this.value = fmtSSN(this.value); });
+  });
+  // Clone-from-past-deal: if redirected from Past Deals with a deal in sessionStorage, populate form
+  tryApplyClonedDeal();
+});
+
+function tryApplyClonedDeal() {
+  try {
+    const params = new URLSearchParams(location.search);
+    if (params.get('clone') !== '1') return;
+    let cloned;
+    try { cloned = JSON.parse(sessionStorage.getItem('clonedDeal') || 'null'); } catch (e) { return; }
+    if (!cloned || !cloned.full_data) return;
+    sessionStorage.removeItem('clonedDeal');
+
+    // Pick entity route (FundGate or Fundkey) based on the cloned deal
+    const isFundkey = (cloned.entity === 'Fundkey');
+    if (typeof selectEntity === 'function') {
+      selectEntity(isFundkey ? 'fundkey' : 'fundgate');
+    }
+    // Pick deal type (weekly/daily) — default weekly if missing
+    // IMPORTANT: selectDealType requires (type, isFundkey) — pass both.
+    const dealType = (cloned.full_data.dealType || 'weekly').toLowerCase();
+    if (typeof selectDealType === 'function') {
+      selectDealType(dealType, isFundkey);
+    }
+
+    // Apply fields after the form is shown
+    setTimeout(() => {
+      try {
+        const data = cloned.full_data;
+        Object.keys(data).forEach(key => {
+          const el = document.getElementById(key);
+          if (!el) return;
+          const val = data[key];
+          if (el.type === 'checkbox') {
+            el.checked = !!val;
+          } else if (el.tagName === 'SELECT') {
+            // Case-insensitive matching for <select> options (e.g. Entity_Type
+            // is saved as "CORPORATION" but the option text is "Corporation").
+            const target = (val == null ? '' : String(val)).trim().toUpperCase();
+            let matched = false;
+            for (let i = 0; i < el.options.length; i++) {
+              const opt = el.options[i];
+              const optVal = (opt.value || opt.text || '').trim().toUpperCase();
+              if (optVal === target) {
+                el.selectedIndex = i;
+                matched = true;
+                break;
+              }
+            }
+            if (!matched) el.value = val == null ? '' : val;
+          } else {
+            el.value = val == null ? '' : val;
+          }
+        });
+
+        // Restore fee mode toggles (% or $) for Appendix A fees
+        if (typeof setFeeMode === 'function') {
+          setFeeMode('ACH_Program_Fee', data.ACH_Program_Fee_Mode || 'pct');
+          setFeeMode('Origination_Fee', data.Origination_Fee_Mode || 'pct');
+        }
+
+        // Refresh BOTH date fields to today (Agreement Date and Addendum Date).
+        // Everything else preserved — user edits whatever's different for the
+        // new funding terms.
+        const todayISO = new Date().toISOString().split('T')[0];
+        const agreementEl = document.getElementById('Agreement_Date');
+        if (agreementEl) agreementEl.value = todayISO;
+        const addendumDateEl = document.getElementById('Agreement_Date1');
+        if (addendumDateEl) addendumDateEl.value = todayISO;
+
+        // Recalculate Purchased Amount and payment fields from the cloned values so
+        // the form's internal calculations stay consistent with what was populated.
+        if (typeof calcPurchasedAmt === 'function') {
+          try { calcPurchasedAmt(); } catch (e) {}
+        }
+        if (typeof calcPaymentFromTerm === 'function') {
+          try { calcPaymentFromTerm(); } catch (e) {}
+        }
+
+        // Trigger toggles (two-signer visibility, NY field visibility, etc.)
+        const twoSig = document.getElementById('twoSigners');
+        if (twoSig && typeof toggleSecondSigner === 'function') toggleSecondSigner();
+        if (typeof updateNYRevField === 'function') updateNYRevField();
+        if (typeof toggleCFD === 'function') toggleCFD();
+
+        // Show banner so user knows this is a clone
+        showCloneBanner(cloned.merchant_legal_name);
+      } catch (innerErr) {
+        console.error('[clone] field-fill error:', innerErr);
+      }
+    }, 100);
+  } catch (err) {
+    console.error('[clone] tryApplyClonedDeal error:', err);
+  }
+}
+
+function showCloneBanner(merchantName) {
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(74,169,255,0.15);border:1px solid #4aa9ff;color:#4aa9ff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+  banner.innerHTML = `📋 Cloned from <strong>${merchantName || 'past deal'}</strong> — adjust funding terms for this new deal`;
+  document.body.appendChild(banner);
+  setTimeout(() => { banner.style.transition = 'opacity .5s'; banner.style.opacity = '0'; setTimeout(() => banner.remove(), 500); }, 6000);
+}
+</script>
+<div class="sysfoot">
+  <div class="row">
+    <span class="b"><span class="d"></span>Encrypted channel</span>
+    <span class="b">Documents generated server-side</span>
+    <span class="b">PDF output</span>
+  </div>
+  <div class="tag">FundGate Document Engine · Authorized use only</div>
+</div>
+
+<script>
+function lockWorkspace(){
+  try{
+    fetch('/deals/logout', {method:'POST'}).finally(function(){ window.location.href='/'; });
+  }catch(e){ window.location.href='/'; }
+}
+</script>
+</body>
+</html>

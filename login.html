@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>FundGate — Secure Access</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070d1a;--bg2:#0a1424;--panel:#0e1a30;
+    --panel2:#122038;--border:#1c2c48;--border2:#263a5e;--accent:#0077ff;--accent2:#3b9dff;
+    --text:#e8eef8;--muted:#7186a8;--dim:#4a5c7e;--success:#00c281;--warn:#ffb020;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(0,119,255,.10), transparent 60%),
+      radial-gradient(800px 500px at 90% 110%, rgba(0,194,129,.05), transparent 60%),
+      var(--bg);
+    color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    -webkit-text-size-adjust:100%;
+  }
+  .frame{width:100%;max-width:940px;display:grid;grid-template-columns:1.15fr .85fr;
+    background:var(--bg2);border:1px solid var(--border);border-radius:20px;overflow:hidden;
+    box-shadow:0 40px 120px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.02) inset;}
+
+  /* LEFT — system panel (chrome to make it feel like real infra) */
+  .left{padding:34px 34px 28px;border-right:1px solid var(--border);position:relative;
+    background:linear-gradient(160deg,rgba(14,26,48,.6),rgba(7,13,26,.2));}
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:26px;}
+  .mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#0055cc);
+    display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;
+    font-size:22px;color:#fff;box-shadow:0 0 28px rgba(0,119,255,.45);}
+  .brand h1{font-size:18px;font-weight:600;letter-spacing:.2px;}
+  .brand .sub{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:2px;}
+
+  .sys-title{font-size:11px;color:var(--dim);letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px;}
+  .modrow{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;border:1px solid var(--border);
+    border-radius:11px;margin-bottom:9px;background:rgba(18,30,54,.5);}
+  .modrow .l{display:flex;align-items:center;gap:10px;font-size:13px;color:#c3d0e6;}
+  .modrow .ico{width:26px;height:26px;border-radius:7px;background:rgba(0,119,255,.12);
+    display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .pill{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;border-radius:20px;
+    letter-spacing:.05em;}
+  .pill.ok{background:rgba(0,194,129,.12);color:var(--success);}
+  .pill.idle{background:rgba(113,134,168,.12);color:var(--muted);}
+
+  .metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:16px;}
+  .metric{border:1px solid var(--border);border-radius:11px;padding:11px 12px;background:rgba(18,30,54,.35);}
+  .metric .v{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:500;color:#dbe6f7;}
+  .metric .k{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:3px;}
+
+  /* RIGHT — auth */
+  .right{padding:38px 34px;display:flex;flex-direction:column;justify-content:center;position:relative;}
+  .lock{width:52px;height:52px;border-radius:14px;border:1px solid var(--border2);
+    display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px;
+    background:rgba(0,119,255,.08);color:var(--accent2);}
+  .right h2{font-family:'DM Serif Display',serif;font-weight:400;font-size:25px;margin-bottom:6px;letter-spacing:.2px;}
+  .right p.lede{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:24px;}
+  label{font-size:10.5px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:8px;}
+  .field{position:relative;}
+  input{width:100%;background:#0a1526;border:1.5px solid var(--border2);border-radius:12px;
+    color:var(--text);font-family:'JetBrains Mono',monospace;font-size:16px;letter-spacing:4px;
+    padding:14px 46px 14px 15px;transition:border-color .18s,box-shadow .18s;}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(0,119,255,.14);}
+  .eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);
+    cursor:pointer;font-size:18px;user-select:none;background:none;border:none;padding:4px;}
+  .btn{width:100%;margin-top:16px;background:linear-gradient(135deg,var(--accent),#0060db);
+    color:#fff;border:none;border-radius:12px;padding:14px;font-family:'DM Sans',sans-serif;
+    font-size:14.5px;font-weight:600;letter-spacing:.3px;cursor:pointer;
+    box-shadow:0 10px 30px rgba(0,119,255,.28);transition:transform .12s,box-shadow .18s,opacity .2s;
+    display:flex;align-items:center;justify-content:center;gap:9px;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 14px 38px rgba(0,119,255,.36);}
+  .btn:active{transform:translateY(0);}
+  .btn:disabled{opacity:.65;cursor:default;transform:none;}
+  .err{margin-top:14px;font-size:12.5px;color:#ff6b6b;display:none;align-items:center;gap:7px;}
+  .err.show{display:flex;}
+  .foot{margin-top:26px;display:flex;align-items:center;justify-content:space-between;
+    font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace;letter-spacing:.04em;}
+  .foot .dot{width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;
+    margin-right:6px;box-shadow:0 0 8px var(--success);animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;
+    border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media(max-width:760px){
+    .frame{grid-template-columns:1fr;max-width:440px;}
+    .left{display:none;}
+    .right{padding:34px 26px;}
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="left">
+      <div class="brand">
+        <div class="mark">F</div>
+        <div><h1>FundGate</h1><div class="sub">Document Engine</div></div>
+      </div>
+
+      <div class="sys-title">Engine modules</div>
+      <div class="modrow"><div class="l"><span class="ico">📄</span>Contract Generator</div><span class="pill ok">ONLINE</span></div>
+      <div class="modrow"><div class="l"><span class="ico">🏛️</span>State Disclosure Layer</div><span class="pill ok">ONLINE</span></div>
+      <div class="modrow"><div class="l"><span class="ico">🖋️</span>PDF Render Pipeline</div><span class="pill ok">ONLINE</span></div>
+      <div class="modrow"><div class="l"><span class="ico">🔐</span>Session Vault</div><span class="pill idle">STANDBY</span></div>
+
+      <div class="metrics">
+        <div class="metric"><div class="v" id="m1">4</div><div class="k">Templates</div></div>
+        <div class="metric"><div class="v" id="m2">12</div><div class="k">Jurisdictions</div></div>
+        <div class="metric"><div class="v">v4.2</div><div class="k">Build</div></div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="lock">🔒</div>
+      <h2>Secure access</h2>
+      <p class="lede">This is a restricted document workspace. Enter your access code to open the generator.</p>
+
+      <label for="pw">Access code</label>
+      <div class="field">
+        <input id="pw" type="password" autocomplete="off" placeholder="••••••" autofocus>
+        <button class="eye" id="eye" type="button" aria-label="Show code">👁</button>
+      </div>
+
+      <button class="btn" id="go"><span id="gotext">Unlock workspace</span></button>
+      <div class="err" id="err"><span>⚠</span><span>Incorrect access code. Try again.</span></div>
+
+      <div class="foot">
+        <span><span class="dot"></span>Encrypted channel</span>
+        <span id="node">NODE · US-EAST</span>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const pw = document.getElementById('pw');
+  const go = document.getElementById('go');
+  const gotext = document.getElementById('gotext');
+  const err = document.getElementById('err');
+  const eye = document.getElementById('eye');
+
+  eye.addEventListener('click', () => {
+    pw.type = pw.type === 'password' ? 'text' : 'password';
+    pw.style.letterSpacing = pw.type === 'text' ? '1px' : '4px';
+    pw.focus();
+  });
+
+  async function submit(){
+    const code = pw.value;
+    if(!code){ pw.focus(); return; }
+    err.classList.remove('show');
+    go.disabled = true;
+    gotext.innerHTML = '<span class="spin"></span>';
+    // Small deliberate beat so the "engine" feels like it's doing work.
+    const started = Date.now();
+    try{
+      const r = await fetch('/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({password: code})
+      });
+      const elapsed = Date.now() - started;
+      if(elapsed < 650) await new Promise(res => setTimeout(res, 650 - elapsed));
+      if(r.ok){
+        gotext.textContent = 'Opening…';
+        window.location.href = '/';
+      } else {
+        throw new Error('bad');
+      }
+    }catch(e){
+      go.disabled = false;
+      gotext.textContent = 'Unlock workspace';
+      err.classList.add('show');
+      pw.value=''; pw.focus();
+    }
+  }
+
+  go.addEventListener('click', submit);
+  pw.addEventListener('keydown', e => { if(e.key === 'Enter') submit(); });
+</script>
+</body>
+</html>
