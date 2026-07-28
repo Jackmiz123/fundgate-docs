@@ -1410,6 +1410,13 @@ function tryApplyClonedDeal() {
         if (typeof calcPaymentFromTerm === 'function') {
           try { calcPaymentFromTerm(); } catch (e) {}
         }
+        // Repurchase addendum: show 4-tier block if the cloned deal used it, then recompute amounts from the factors.
+        if (data.use_4tier_repurchase && typeof toggle4Tier === 'function') {
+          try { toggle4Tier(true); } catch (e) {}
+        }
+        if (typeof calcAddendum === 'function') {
+          try { calcAddendum(); } catch (e) {}
+        }
 
         // Trigger toggles (two-signer visibility, NY field visibility, etc.)
         const twoSig = document.getElementById('twoSigners');
