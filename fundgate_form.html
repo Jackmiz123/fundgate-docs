@@ -1330,11 +1330,20 @@ window.addEventListener('load', () => {
 function tryApplyClonedDeal() {
   try {
     const params = new URLSearchParams(location.search);
-    if (params.get('clone') !== '1') return;
-    let cloned;
-    try { cloned = JSON.parse(sessionStorage.getItem('clonedDeal') || 'null'); } catch (e) { return; }
+    let cloned = null;
+    const payload = params.get('payload');
+    if (payload) {
+      // Pre-fill from an external system (e.g. FundGate backend) via URL parameter.
+      try { cloned = JSON.parse(decodeURIComponent(escape(atob(payload)))); } catch (e) { return; }
+      // Clean the payload out of the URL so a refresh doesn't re-apply / leak it.
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    } else if (params.get('clone') === '1') {
+      try { cloned = JSON.parse(sessionStorage.getItem('clonedDeal') || 'null'); } catch (e) { return; }
+      sessionStorage.removeItem('clonedDeal');
+    } else {
+      return;
+    }
     if (!cloned || !cloned.full_data) return;
-    sessionStorage.removeItem('clonedDeal');
 
     // Pick entity route (FundGate or Fundkey) based on the cloned deal
     const isFundkey = (cloned.entity === 'Fundkey');
