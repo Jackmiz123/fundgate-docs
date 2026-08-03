@@ -808,7 +808,7 @@ class Handler(BaseHTTPRequestHandler):
                     fname = f'{prefix}_Payoff_{merchant}_{date_str}.docx'
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
-                self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')
+                self.send_header('Content-Disposition', f'attachment; filename="{fname}"')
                 self.send_header('Content-Length', str(len(out_bytes)))
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
@@ -840,7 +840,7 @@ class Handler(BaseHTTPRequestHandler):
                     fname = f'{prefix}_ZeroBalance_{merchant}_{date_str}.docx'
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
-                self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')
+                self.send_header('Content-Disposition', f'attachment; filename="{fname}"')
                 self.send_header('Content-Length', str(len(out_bytes)))
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
