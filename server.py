@@ -10,6 +10,7 @@ from ca_disclosure_module import build_ca_disclosure_bytes
 from ny_disclosure_module import build_ny_disclosure_bytes
 from ct_disclosure_module import build_ct_disclosure_bytes
 from ut_disclosure_module import build_ut_disclosure_bytes
+from va_disclosure_module import build_va_disclosure_bytes
 import db_module
 import auth_module
 
@@ -692,6 +693,8 @@ class Handler(BaseHTTPRequestHandler):
                     disc_bytes = build_ct_disclosure_bytes(data)
                 elif state == 'UT':
                     disc_bytes = build_ut_disclosure_bytes(data)
+                elif state == 'VA':
+                    disc_bytes = build_va_disclosure_bytes(data)
                 else:
                     disc_bytes = build_disclosure_bytes(data)
                 # No-state Commercial Financing Disclosure is used ONLY when the
