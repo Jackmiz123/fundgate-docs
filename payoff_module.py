@@ -110,7 +110,7 @@ def build_payoff_letter(data):
     # ── Merchant Name (bold) ──
     merch_para = doc.add_paragraph()
     merch_para.space_after = Pt(4)
-    merch_run = merch_para.add_run(merchant)
+    merch_run = merch_para.add_run(merchant.upper())
     merch_run.bold = True
     merch_run.font.name = 'Times New Roman'
     merch_run.font.size = Pt(12)
