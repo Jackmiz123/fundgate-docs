@@ -3,27 +3,9 @@
 import http.server, json, zipfile, re, os, subprocess, tempfile, shutil, io
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from disclosure_module import build_disclosure_bytes
-from cfd_nostate_module import build_nostate_disclosure_bytes
 from payoff_module import build_payoff_letter
 from zero_balance_module import build_zero_balance_letter
 from ca_disclosure_module import build_ca_disclosure_bytes
-from ny_disclosure_module import build_ny_disclosure_bytes
-from ct_disclosure_module import build_ct_disclosure_bytes
-from ut_disclosure_module import build_ut_disclosure_bytes
-from va_disclosure_module import build_va_disclosure_bytes
-import db_module
-import auth_module
-
-# Characters that are ILLEGAL in XML 1.0 / OOXML (C0 control chars except
-# tab, newline, carriage return). A stray one of these in any field value
-# (commonly from copy-pasting a name or address out of a PDF/email) makes
-# document.xml not well-formed, so Word reports "problems with the contents"
-# even though the file downloads. Stripping them is a no-op for clean data
-# and never affects legitimate contract text.
-_ILLEGAL_XML_CHARS = re.compile(r'[\x00-\x08\x0B\x0C\x0E-\x1F]')
-
-def strip_illegal_xml_chars(s):
-    return _ILLEGAL_XML_CHARS.sub('', s) if s else s
 
 TEMPLATE_WEEKLY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_WEEKLY.docx')
 TEMPLATE_DAILY  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDGATE_TEMPLATE_DAILY.docx')
@@ -31,13 +13,6 @@ TEMPLATE_DAILY  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUND
 TEMPLATE_WEEKLY_CA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDKEY_TEMPLATE_WEEKLY.docx')
 TEMPLATE_DAILY_CA  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'FUNDKEY_TEMPLATE_DAILY.docx')
 FORM            = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fundgate_form.html')
-FORM_BROKER     = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fundgate_form_broker.html')
-DEALS_PAGE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'deals_page.html')
-LOGIN_PAGE      = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'login.html')
-
-# Broker deployment flag. When set, the SAME codebase runs as the gated,
-# PDF-only, Past-Deals-hidden broker workspace. Off = the normal app, unchanged.
-BROKER_MODE = os.environ.get('BROKER_MODE', '').strip().lower() in ('1', 'true', 'yes', 'on')
 
 SIGNER2_BLOCKS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -45,7 +20,6 @@ FIELDS = {
     '«Agreement_Date»':             'Agreement_Date',
     '«Agreement_Date1»':            'Agreement_Date',
     '«Merchant_Legal_Name»':        'Merchant_Legal_Name',
-    '«Merchant_Display_Name»':      'Merchant_Display_Name',
     '«Merchant_DBA»':               'Merchant_DBA',
     '«Entity_Type»':                'Entity_Type',
     '«State_of_Organization»':      'State_of_Organization',
@@ -119,9 +93,6 @@ def merge_disclosure_into_contract(contract_bytes, disclosure_bytes):
     contract_xml = contract_xml.replace('<w:body>', '<w:body>' + disc_body, 1)
     contract_xml = contract_xml.replace('<w:pgNumType w:start="1"/>', '<w:pgNumType w:start="2"/>', 1)
 
-    # Final safety net: ensure the merged document.xml has no XML-illegal
-    # control characters (covers both contract and disclosure-inserted text).
-    contract_xml = strip_illegal_xml_chars(contract_xml)
     contract_files['word/document.xml'] = contract_xml.encode('utf-8')
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zout:
@@ -147,29 +118,7 @@ def fill_docx(data):
     two_signers = data.get('twoSigners', False)
 
     def safe(val):
-        return strip_illegal_xml_chars(val or '').replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
-
-    # On a 2-signer deal, the addendum intro line must name BOTH guarantors.
-    # Target only the intro: the «Owner_Guarantor_1» placeholder immediately
-    # before the word "Guarantors" (which appears only in the addendum intro).
-    # All other placeholder spots are left to the normal field replacement
-    # below, so single-signer output is unchanged. Fails safe (no edit) if the
-    # expected text isn't found.
-    if two_signers and (data.get('Owner_Guarantor_2') or '').strip():
-        _g1 = safe((data.get('Owner_Guarantor_1') or '').upper())
-        _g2 = safe((data.get('Owner_Guarantor_2') or '').upper())
-        _gpos = doc.find('Guarantors')
-        if _gpos != -1:
-            _ppos = doc.rfind('<w:t>«Owner_Guarantor_1»</w:t>', 0, _gpos)
-            if _ppos != -1:
-                _rs = doc.rfind('<w:r ', 0, _ppos)
-                _re = doc.find('</w:r>', _ppos) + len('</w:r>')
-                _run = doc[_rs:_re]
-                _both = (_run.replace('«Owner_Guarantor_1»', _g1)
-                         + '<w:r><w:rPr><w:color w:val="010202"/></w:rPr>'
-                           '<w:t xml:space="preserve"> and </w:t></w:r>'
-                         + _run.replace('«Owner_Guarantor_1»', _g2))
-                doc = doc[:_rs] + _both + doc[_re:]
+        return (val or '').replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
     # Determine the rId that points to the Sign Here arrow image (media/image2.png)
     # in the current template — s2_block files reference rId10 (weekly's mapping) by
@@ -185,8 +134,9 @@ def fill_docx(data):
     if two_signers:
         def fill_s2_block(block_xml):
             for placeholder, key in FIELDS_S2.items():
-                # Rule: every signer-2 field prints UPPERCASE on the contract.
-                val = (data.get(key, '') or '').upper()
+                val = data.get(key, '') or ''
+                if key in ('Owner_Guarantor_2', 'Merchant_Legal_Name', 'Merchant_DBA'):
+                    val = val.upper()
                 block_xml = block_xml.replace(placeholder, safe(val))
             # Patch rId10 references (Sign Here arrow) for templates where
             # image2.png maps to a different rId (e.g. daily uses rId9).
@@ -264,7 +214,7 @@ def fill_docx(data):
         '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/><w:jc w:val="both"/></w:pPr>'
         '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>If you ever have questions about your account, experience payment issues, or need clarification on anything, you can contact us directly. There is no need to involve any outside company:</w:t></w:r></w:p>'
         '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="40" w:after="40"/><w:ind w:left="720"/></w:pPr>'
-        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Phone: 631-772-9020</w:t></w:r></w:p>'
+        '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Phone: 929-256-7464</w:t></w:r></w:p>'
         '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="0" w:after="80"/><w:ind w:left="720"/></w:pPr>'
         '<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t>Email: admin@fundgatellc.com</w:t></w:r></w:p>'
         '<w:p><w:pPr><w:pStyle w:val="BodyText"/><w:spacing w:before="200" w:after="80"/></w:pPr>'
@@ -285,11 +235,11 @@ def fill_docx(data):
     )
 
     # ── Fundkey-only: swap the FundGate email line in the consumer notice ────
-    # Fundkey email = admin@fundkeyllc.com
+    # Fundkey email = admin@fundkey.com
     if is_fundkey:
         doc = doc.replace(
             '<w:t>Email: admin@fundgatellc.com</w:t>',
-            '<w:t>Email: admin@fundkeyllc.com</w:t>'
+            '<w:t>Email: admin@fundkey.com</w:t>'
         )
 
     # ── Repurchase mid-block (3-tier vs 4-tier) ────────────────────────────
@@ -440,27 +390,17 @@ def fill_docx(data):
         doc = doc.replace(SPACER, '')
 
     # ── Fill all standard fields ─────────────────────────────────────────────────
-    # Rule: EVERY field prints UPPERCASE on the contract, EXCEPT the fields in
-    # NO_UPPER (kept as entered). ACH_Frequency reads "Weekly"/"Daily" in
-    # running text on the ACH debit page, so it stays in regular case.
-    # Uppercasing is a no-op on numeric/money/percent/date-slash values, so for
-    # everything else this only changes the text fields (names, addresses,
-    # entity type, DL, etc.) and guarantees no field is ever missed.
-    NO_UPPER = {'ACH_Frequency'}
-    # Compute the merchant display name used in select template spots
-    # (main signature, ACH top, ACH sig, addendum body, addendum sig).
-    # When DBA differs from legal name, append " DBA <name>"; otherwise just
-    # use the legal name. Comparison is case-insensitive, ignoring whitespace.
-    _legal = (data.get('Merchant_Legal_Name', '') or '').strip()
-    _dba   = (data.get('Merchant_DBA', '') or '').strip()
-    if _dba and _dba.upper() != _legal.upper():
-        data['Merchant_Display_Name'] = f'{_legal} DBA {_dba}'
-    else:
-        data['Merchant_Display_Name'] = _legal
-
+    # Fields that must be UPPERCASE in the contract
+    UPPERCASE_FIELDS = {
+        'Merchant_Legal_Name', 'Merchant_DBA', 'Entity_Type', 'State_of_Organization',
+        'Executive_Office_Address', 'Mailing_Address', 'Bank_Name',
+        'Owner_Guarantor_1', 'Merchant_1', 'Authorized_Signer_Name',
+        'Owner_Guarantor_2',
+    }
     for field, key in FIELDS.items():
-        raw = data.get(key, '') or ''
-        val = raw if key in NO_UPPER else raw.upper()
+        val = data.get(key, '') or ''
+        if key in UPPERCASE_FIELDS:
+            val = val.upper()
         val = safe(val)
         doc = doc.replace(field, val)
 
@@ -573,76 +513,13 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
 
     def do_GET(self):
-        # Strip query string for path matching (e.g. /?clone=1 -> /)
-        from urllib.parse import urlparse
-        path_only = urlparse(self.path).path
-        if BROKER_MODE:
-            # Whole-site gate: no session -> login screen for any path.
-            if not auth_module.is_valid_cookie(self.headers.get('Cookie', '')):
-                self.send_response(200)
-                self.send_header('Content-Type','text/html; charset=utf-8')
-                self.end_headers()
-                self.wfile.write(open(LOGIN_PAGE,'rb').read())
-                return
-            # Past Deals browsing is not exposed to the broker.
-            if path_only in ('/deals', '/deals/') or path_only.startswith('/deals/search') \
-               or path_only == '/deals/check-auth' or (path_only.startswith('/deals/') and len(path_only.split('/')) == 3):
-                self.send_response(404); self.end_headers()
-                return
-        if path_only == '/':
+        if self.path == '/':
             self.send_response(200)
             self.send_header('Content-Type','text/html; charset=utf-8')
             self.end_headers()
-            self.wfile.write(open(FORM_BROKER if BROKER_MODE else FORM,'rb').read())
-        elif path_only == '/deals' or path_only == '/deals/':
-            # Past Deals page (HTML always served; client-side calls /deals/check-auth)
-            self.send_response(200)
-            self.send_header('Content-Type','text/html; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(open(DEALS_PAGE,'rb').read())
-        elif self.path == '/deals/check-auth':
-            cookie = self.headers.get('Cookie', '')
-            if auth_module.is_valid_cookie(cookie):
-                self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers()
-                self.wfile.write(b'{"ok":true}')
-            else:
-                self.send_response(401); self.send_header('Content-Type','application/json'); self.end_headers()
-                self.wfile.write(b'{"ok":false}')
-        elif self.path.startswith('/deals/search'):
-            if not self._require_auth(): return
-            from urllib.parse import urlparse, parse_qs
-            qs = parse_qs(urlparse(self.path).query)
-            q = (qs.get('q', [''])[0] or '').strip()
-            entity = (qs.get('entity', [''])[0] or '').strip() or None
-            if not db_module.is_configured():
-                self.send_response(503); self.send_header('Content-Type','application/json'); self.end_headers()
-                self.wfile.write(b'{"error":"db not configured"}')
-                return
-            results = db_module.search_deals(query=q, entity=entity)
-            self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers()
-            self.wfile.write(json.dumps(results, default=str).encode())
-        elif self.path.startswith('/deals/') and len(self.path.split('/')) == 3:
-            # GET /deals/<id>
-            if not self._require_auth(): return
-            deal_id = self.path.split('/')[2]
-            deal = db_module.get_deal(deal_id)
-            if not deal:
-                self.send_response(404); self.send_header('Content-Type','application/json'); self.end_headers()
-                self.wfile.write(b'{"error":"not found"}')
-                return
-            self.send_response(200); self.send_header('Content-Type','application/json'); self.end_headers()
-            self.wfile.write(json.dumps(deal, default=str).encode())
+            self.wfile.write(open(FORM,'rb').read())
         else:
             self.send_response(404); self.end_headers()
-
-    def _require_auth(self):
-        """Check session cookie; send 401 and return False if invalid. Else True."""
-        cookie = self.headers.get('Cookie', '')
-        if auth_module.is_valid_cookie(cookie):
-            return True
-        self.send_response(401); self.send_header('Content-Type','application/json'); self.end_headers()
-        self.wfile.write(b'{"error":"unauthorized"}')
-        return False
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -651,58 +528,13 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        # Login endpoint for the broker gate (public, pre-auth).
-        if self.path in ('/login', '/deals/login') and BROKER_MODE:
-            length = int(self.headers.get('Content-Length', 0))
-            try:
-                payload = json.loads(self.rfile.read(length))
-            except Exception:
-                payload = {}
-            if auth_module.check_password(payload.get('password')):
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Set-Cookie', auth_module.cookie_header())
-                self.end_headers()
-                self.wfile.write(b'{"ok":true}')
-            else:
-                self.send_response(401)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(b'{"ok":false}')
-            return
-        # In broker mode everything past this point needs a valid session.
-        if BROKER_MODE and not auth_module.is_valid_cookie(self.headers.get('Cookie', '')):
-            self.send_response(401); self.send_header('Content-Type','application/json'); self.end_headers()
-            self.wfile.write(b'{"error":"unauthorized"}'); return
-        # Broker builds only generate contracts — payoff / zero-balance letters are blocked.
-        if BROKER_MODE and (self.path.startswith('/generate/payoff') or self.path.startswith('/generate/zerobalance')):
-            self.send_response(404); self.send_header('Content-Type','application/json'); self.end_headers()
-            self.wfile.write(b'{"error":"not available"}'); return
         if self.path in ('/generate', '/generate/pdf'):
-            want_pdf = True if BROKER_MODE else self.path.endswith('/pdf')
+            want_pdf = self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(length))
             try:
                 docx_bytes = fill_docx(data)
-                # NY, CT and UT each use their own dedicated disclosure module (FundGate-only).
-                # All other states continue through the existing builder.
-                state = (data.get('State_of_Organization') or '').upper().strip()
-                if state == 'NY':
-                    disc_bytes = build_ny_disclosure_bytes(data)
-                elif state == 'CT':
-                    disc_bytes = build_ct_disclosure_bytes(data)
-                elif state == 'UT':
-                    disc_bytes = build_ut_disclosure_bytes(data)
-                elif state == 'VA':
-                    disc_bytes = build_va_disclosure_bytes(data)
-                else:
-                    disc_bytes = build_disclosure_bytes(data)
-                # No-state Commercial Financing Disclosure is used ONLY when the
-                # deal's state has no CFDL disclosure of its own; it never
-                # replaces a state disclosure. The Prior_Balance_Amount field
-                # flows into whichever disclosure renders.
-                if disc_bytes is None and data.get('includeNoStateCFD'):
-                    disc_bytes = build_nostate_disclosure_bytes(data)
+                disc_bytes = build_disclosure_bytes(data)
                 if disc_bytes:
                     docx_bytes = merge_disclosure_into_contract(docx_bytes, disc_bytes)
                 if want_pdf:
@@ -720,12 +552,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin','*')
                 self.end_headers()
                 self.wfile.write(out_bytes)
-                # Best-effort auto-save to deals DB (never blocks the response).
-                try:
-                    deal_type = (data.get('dealType') or '').lower() or 'weekly'
-                    db_module.save_deal(data, entity='FundGate', deal_type=deal_type)
-                except Exception as _save_err:
-                    print(f'[db] auto-save failed: {_save_err}')
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type','application/json')
@@ -742,7 +568,7 @@ class Handler(BaseHTTPRequestHandler):
             #   - other states          -> no disclosure (same as FundGate)
             # The legacy /generate/ca paths are kept as aliases so existing
             # bookmarks still work.
-            want_pdf = True if BROKER_MODE else self.path.endswith('/pdf')
+            want_pdf = self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(length))
             try:
@@ -758,9 +584,6 @@ class Handler(BaseHTTPRequestHandler):
                     disc_bytes = build_ca_disclosure_bytes(data)
                 else:
                     disc_bytes = build_disclosure_bytes(data)
-                # No-state CFD only when the state has no disclosure of its own.
-                if disc_bytes is None and data.get('includeNoStateCFD'):
-                    disc_bytes = build_nostate_disclosure_bytes(data)
                 if disc_bytes:
                     docx_bytes = merge_disclosure_into_contract(docx_bytes, disc_bytes)
                 if want_pdf:
@@ -778,12 +601,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin','*')
                 self.end_headers()
                 self.wfile.write(out_bytes)
-                # Best-effort auto-save to deals DB (never blocks the response).
-                try:
-                    deal_type = (data.get('dealType') or '').lower() or 'weekly'
-                    db_module.save_deal(data, entity='Fundkey', deal_type=deal_type)
-                except Exception as _save_err:
-                    print(f'[db] auto-save failed: {_save_err}')
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type','application/json')
@@ -791,7 +608,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
         elif self.path in ('/generate/payoff', '/generate/payoff/pdf'):
-            want_pdf = True if BROKER_MODE else self.path.endswith('/pdf')
+            want_pdf = self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(length))
             try:
@@ -800,18 +617,17 @@ class Handler(BaseHTTPRequestHandler):
                     raise Exception('Missing required payoff letter fields')
                 merchant = re.sub(r'\s+', '_', data.get('payoff_merchant', 'Payoff'))
                 date_str = (data.get('payoff_date', '') or '').replace('/', '_')
-                prefix = 'FundKey' if (data.get('entity') or '').strip().lower() == 'fundkey' else 'FundGate'
                 if want_pdf:
                     out_bytes = docx_to_pdf(docx_bytes)
                     mime = 'application/pdf'
-                    fname = f'{prefix}_Payoff_{merchant}_{date_str}.pdf'
+                    fname = f'FundGate_Payoff_{merchant}_{date_str}.pdf'
                 else:
                     out_bytes = docx_bytes
                     mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    fname = f'{prefix}_Payoff_{merchant}_{date_str}.docx'
+                    fname = f'FundGate_Payoff_{merchant}_{date_str}.docx'
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
-                self.send_header('Content-Disposition', f'attachment; filename="{fname}"')
+                self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')
                 self.send_header('Content-Length', str(len(out_bytes)))
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
@@ -823,7 +639,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
         elif self.path in ('/generate/zerobalance', '/generate/zerobalance/pdf'):
-            want_pdf = True if BROKER_MODE else self.path.endswith('/pdf')
+            want_pdf = self.path.endswith('/pdf')
             length = int(self.headers.get('Content-Length', 0))
             data = json.loads(self.rfile.read(length))
             try:
@@ -832,18 +648,17 @@ class Handler(BaseHTTPRequestHandler):
                     raise Exception('Missing required zero balance letter fields')
                 merchant = re.sub(r'\s+', '_', data.get('zb_merchant', 'ZeroBalance'))
                 date_str = (data.get('zb_date', '') or '').replace('/', '_')
-                prefix = 'FundKey' if (data.get('entity') or '').strip().lower() == 'fundkey' else 'FundGate'
                 if want_pdf:
                     out_bytes = docx_to_pdf(docx_bytes)
                     mime = 'application/pdf'
-                    fname = f'{prefix}_ZeroBalance_{merchant}_{date_str}.pdf'
+                    fname = f'FundGate_ZeroBalance_{merchant}_{date_str}.pdf'
                 else:
                     out_bytes = docx_bytes
                     mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                    fname = f'{prefix}_ZeroBalance_{merchant}_{date_str}.docx'
+                    fname = f'FundGate_ZeroBalance_{merchant}_{date_str}.docx'
                 self.send_response(200)
                 self.send_header('Content-Type', mime)
-                self.send_header('Content-Disposition', f'attachment; filename="{fname}"')
+                self.send_header('Content-Disposition', f'attachment; filename="{fname}"; filename*=UTF-8''{fname}')
                 self.send_header('Content-Length', str(len(out_bytes)))
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
@@ -854,44 +669,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
-        elif self.path == '/deals/login':
-            length = int(self.headers.get('Content-Length', 0))
-            try:
-                payload = json.loads(self.rfile.read(length))
-            except Exception:
-                payload = {}
-            if auth_module.check_password(payload.get('password')):
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Set-Cookie', auth_module.cookie_header())
-                self.end_headers()
-                self.wfile.write(b'{"ok":true}')
-            else:
-                self.send_response(401)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(b'{"ok":false}')
-        elif self.path == '/deals/logout':
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Set-Cookie', auth_module.clear_cookie_header())
-            self.end_headers()
-            self.wfile.write(b'{"ok":true}')
-        else:
-            self.send_response(404); self.end_headers()
-
-    def do_DELETE(self):
-        if BROKER_MODE:
-            self.send_response(404); self.end_headers(); return
-        if self.path.startswith('/deals/') and len(self.path.split('/')) == 3:
-            if not self._require_auth(): return
-            deal_id = self.path.split('/')[2]
-            ok = db_module.delete_deal(deal_id)
-            if ok:
-                self.send_response(204); self.end_headers()
-            else:
-                self.send_response(500); self.send_header('Content-Type', 'application/json'); self.end_headers()
-                self.wfile.write(b'{"error":"delete failed"}')
         else:
             self.send_response(404); self.end_headers()
 
