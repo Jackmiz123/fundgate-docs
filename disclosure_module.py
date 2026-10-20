@@ -161,7 +161,7 @@ def build_disclosure_bytes(data):
     # the Fundkey-branded contract it'll be merged into.
     is_fundkey    = bool(data.get('isFundkey', False)) or bool(data.get('isCA', False))
     provider_name  = 'Fundkey LLC' if is_fundkey else 'FundGate LLC'
-    provider_email = 'admin@fundkey.com' if is_fundkey else 'admin@fundgatellc.com'
+    provider_email = 'admin@fundkeyllc.com' if is_fundkey else 'admin@fundgatellc.com'
 
     two_signers   = data.get('twoSigners', False)
     merchant_name = (data.get('Merchant_Legal_Name', '') or '').upper()
@@ -173,15 +173,26 @@ def build_disclosure_bytes(data):
     pa       = _n(data, 'Purchased_Amount')
     orig_pct = _n(data, 'Origination_Fee_Percentage')
     ach_pct  = _n(data, 'ACH_Program_Fee_Percentage')
-    total_fee_pct = orig_pct + ach_pct
-    orig_amt = round(pp * total_fee_pct / 100, 2)
-    disbursed= round(pp - orig_amt, 2)
+    # Support $ and % modes for fees (form sends Mode flag from v8+).
+    # When Mode == 'dollar' the input is a flat dollar amount, not a percentage.
+    ach_mode  = (data.get('ACH_Program_Fee_Mode', 'pct') or 'pct').lower()
+    orig_mode = (data.get('Origination_Fee_Mode', 'pct') or 'pct').lower()
+    ach_amt   = ach_pct if ach_mode == 'dollar' else round(pp * ach_pct / 100, 2)
+    orig_amt_only = orig_pct if orig_mode == 'dollar' else round(pp * orig_pct / 100, 2)
+    orig_amt = round(ach_amt + orig_amt_only, 2)
+    prior_balance = _n(data, 'Prior_Balance_Amount')
+    third_party   = _n(data, 'Third_Party_Amount')
+    deducted_total = round(orig_amt + prior_balance + third_party, 2)
+    disbursed= round(pp - deducted_total, 2)
     cost     = round(pa - pp, 2)
 
     pp_fmt   = _fmt_currency(pp)
     pa_fmt   = _fmt_currency(pa)
     orig_fmt = _fmt_currency(orig_amt)
     dis_fmt  = _fmt_currency(disbursed)
+    prior_fmt = _fmt_currency(prior_balance)
+    third_fmt = _fmt_currency(third_party)
+    ded_fmt   = _fmt_currency(deducted_total)
     cost_fmt = _fmt_currency(cost)
 
     spec_pct   = data.get('Specified_Percentage', '')
@@ -229,7 +240,7 @@ def build_disclosure_bytes(data):
         _para([_run('Provider', bold=True)], after=40),
         _para([_run(f'Name: {provider_name}', bold=True)], after=40),
         _para([_run('Address: 1202 Avenue U, Suite 1175, Brooklyn NY 11229', bold=True)], after=40),
-        _para([_run('Phone Number: 929-256-7464', bold=True)], after=40),
+        _para([_run('Phone Number: 631-772-9020', bold=True)], after=40),
         _para([_run(f'E-mail Address: {provider_email}', bold=True)], after=40),
     ]
     desc_para = _para(
@@ -252,10 +263,10 @@ def build_disclosure_bytes(data):
             _tr(_tc(9048, [
                 _para([_run('2.  Amounts Deducted from Funding Provided', bold=True)], after=40),
                 _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=20)], after=40),
-                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=20)], after=40),
-                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=20)], after=40),
+                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {prior_fmt}', sz=20)], after=40),
+                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  {third_fmt}', sz=20)], after=40),
             ]),
-                _tc(2472, [_para([_run(orig_fmt, bold=True)], after=20, jc='right')])),
+                _tc(2472, [_para([_run(ded_fmt, bold=True)], after=20, jc='right')])),
             _tr(_tc(9048, [_para([_run('3.  Total Amount of Funds Disbursed (1 minus 2)', bold=True)], after=40)]),
                 _tc(2472, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
             _tr(_tc(9048, [_para([_run('4.  Total of Payments', bold=True)], after=40)]),
@@ -270,10 +281,10 @@ def build_disclosure_bytes(data):
             _tr(_tc(9048, [
                 _para([_run('2.  Amounts Deducted from Funding Provided', bold=True)], after=40),
                 _para([_run(f'   Fees deducted or withheld at disbursement \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {orig_fmt}', sz=20)], after=40),
-                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  $0.00', sz=20)], after=40),
-                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  $0.00', sz=20)], after=40),
+                _para([_run(f'   Amount deducted for prior balance paid to us \u2026\u2026\u2026\u2026\u2026\u2026\u2026\u2026  {prior_fmt}', sz=20)], after=40),
+                _para([_run(f'   Amount deducted and paid to third parties on your behalf \u2026\u2026  {third_fmt}', sz=20)], after=40),
             ]),
-                _tc(2472, [_para([_run(orig_fmt, bold=True)], after=20, jc='right')])),
+                _tc(2472, [_para([_run(ded_fmt, bold=True)], after=20, jc='right')])),
             _tr(_tc(9048, [_para([_run('3.  Total Amount of Funds Disbursed (1 minus 2)', bold=True)], after=40)]),
                 _tc(2472, [_para([_run(dis_fmt, bold=True)], after=20, jc='right')])),
             _tr(_tc(9048, [_para([_run('4.  Total Amount to be Paid to Us', bold=True)], after=40)]),

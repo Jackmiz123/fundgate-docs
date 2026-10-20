@@ -530,6 +530,17 @@ select{text-transform:uppercase;}
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:4px;">Required for UT deals. Utah requires the broker name and the amount paid to the broker, even when the provider pays the commission. Leave blank if there is no broker.</div>
       </div>
+      <div class="field-wrap full" id="wrap_va_broker" style="display:none;">
+        <label>Broker Compensation (VA Disclosure)</label>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select id="VA_Broker_Pays" style="flex:0 0 110px;" onchange="updateVABrokerAmt()">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+          <div class="input-prefix" style="flex:1;"><span>$</span><input type="text" id="VA_Broker_Amount" placeholder="3,000.00" disabled></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Required for VA deals. If yes, enter the dollar amount of compensation paid directly to the broker.</div>
+      </div>
       <hr class="section-divider">
       <div class="section-label">Appendix A — Fees</div>
       <div class="field-wrap">
@@ -988,6 +999,24 @@ function updateNYRevField() {
   if (utWrap) {
     utWrap.style.display = (state === 'UT' && !IS_FUNDKEY) ? '' : 'none';
   }
+
+  // VA broker compensation field — same pattern as CT (FundGate-only, VA-only).
+  const vaWrap = document.getElementById('wrap_va_broker');
+  if (vaWrap) {
+    vaWrap.style.display = (state === 'VA' && !IS_FUNDKEY) ? '' : 'none';
+  }
+}
+
+function updateVABrokerAmt() {
+  const yn = document.getElementById('VA_Broker_Pays');
+  const amt = document.getElementById('VA_Broker_Amount');
+  if (!yn || !amt) return;
+  if (yn.value === 'Yes') {
+    amt.disabled = false;
+  } else {
+    amt.disabled = true;
+    amt.value = '';
+  }
 }
 
 function updateCTBrokerAmt() {
@@ -1394,6 +1423,8 @@ function getData() {
     CT_Broker_Amount: fmtMoney(fv('CT_Broker_Amount')),
     UT_Broker_Name: fv('UT_Broker_Name') || '',
     UT_Broker_Amount: fmtMoney(fv('UT_Broker_Amount')),
+    VA_Broker_Pays: fv('VA_Broker_Pays') || 'No',
+    VA_Broker_Amount: fmtMoney(fv('VA_Broker_Amount')),
   };
 }
 
