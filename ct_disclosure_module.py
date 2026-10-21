@@ -509,7 +509,7 @@ def build_ct_disclosure_bytes(data):
 
     def _sig_cell(line_chars, label, width):
         para = (
-            _para([_run('_' * line_chars, size=20)], align='left', spacing_after=20) +
+            _para([_run('_' * line_chars, size=20)], align='left', spacing_after=0) +
             _para([_run(label, size=16)], align='left', spacing_after=0)
         )
         cell_xml = '<w:tc>'
@@ -520,8 +520,8 @@ def build_ct_disclosure_bytes(data):
                      '<w:bottom w:val="nil"/><w:right w:val="nil"/>'
                      '</w:tcBorders>')
         cell_xml += '<w:vAlign w:val="top"/>'
-        cell_xml += '<w:tcMar><w:top w:w="60" w:type="dxa"/><w:left w:w="0" w:type="dxa"/>'
-        cell_xml += '<w:bottom w:w="60" w:type="dxa"/><w:right w:w="200" w:type="dxa"/></w:tcMar>'
+        cell_xml += '<w:tcMar><w:top w:w="20" w:type="dxa"/><w:left w:w="0" w:type="dxa"/>'
+        cell_xml += '<w:bottom w:w="20" w:type="dxa"/><w:right w:w="200" w:type="dxa"/></w:tcMar>'
         cell_xml += '</w:tcPr>'
         cell_xml += para
         cell_xml += '</w:tc>'
@@ -529,14 +529,29 @@ def build_ct_disclosure_bytes(data):
 
     # Tuned underscore counts so each line fits inside its column WITHOUT wrapping.
     # Initials col 2200 dxa ≈ 1.5", Signature col 5800 dxa ≈ 4", Date col 2800 dxa ≈ 1.9"
-    sig_row_inner = (
-        '<w:tr>'
-        '<w:trPr><w:cantSplit/></w:trPr>'
-        + _sig_cell(18, "Merchant's Initials", SIG_COL_INIT)
-        + _sig_cell(48, 'Signature', SIG_COL_SIG)
-        + _sig_cell(22, 'Date', SIG_COL_DATE)
-        + '</w:tr>'
-    )
+    def _sig_data_row():
+        return (
+            '<w:tr>'
+            '<w:trPr><w:cantSplit/></w:trPr>'
+            + _sig_cell(18, "Merchant's Initials", SIG_COL_INIT)
+            + _sig_cell(48, 'Signature', SIG_COL_SIG)
+            + _sig_cell(22, 'Date', SIG_COL_DATE)
+            + '</w:tr>'
+        )
+
+    def _sig_gap_row():
+        def _empty(w):
+            return (f'<w:tc><w:tcPr><w:tcW w:w="{w}" w:type="dxa"/>'
+                    '<w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/>'
+                    '<w:bottom w:val="nil"/><w:right w:val="nil"/></w:tcBorders></w:tcPr>'
+                    '<w:p><w:pPr><w:spacing w:before="40" w:after="0" w:line="120" w:lineRule="exact"/>'
+                    '<w:rPr><w:sz w:val="8"/></w:rPr></w:pPr></w:p></w:tc>')
+        return '<w:tr>' + _empty(SIG_COL_INIT) + _empty(SIG_COL_SIG) + _empty(SIG_COL_DATE) + '</w:tr>'
+
+    # Second signer gets its own Initials | Signature | Date row on page 1.
+    sig_row_inner = _sig_data_row()
+    if two_signers and signer2_name:
+        sig_row_inner += _sig_gap_row() + _sig_data_row()
     sig_table = (
         '<w:tbl>'
         '<w:tblPr>'
@@ -551,7 +566,7 @@ def build_ct_disclosure_bytes(data):
         + sig_row_inner + '</w:tbl>'
     )
     # Empty paragraph above the signature table to push it down from the box.
-    sig_spacer = _para([_run('', size=20)], spacing_before=120, spacing_after=0)
+    sig_spacer = _para([_run('', size=12)], spacing_before=0, spacing_after=0)
     sig_para = sig_spacer + sig_table
     sig_labels = ''  # labels are inside sig_table cells now
 
@@ -695,19 +710,17 @@ def build_ct_disclosure_bytes(data):
         _run('Acknowledgement: ', bold=True, size=20)
         + _run('I/We acknowledge that I/we have received this Commercial Financing Disclosure Form.', size=20),
         align='left', spacing_before=40, spacing_after=120))
-    pg2_body.append(_para(
-        _run('Signature of Merchant: ', bold=True, size=20)
-        + _run('_' * 50, size=20),
-        align='left', spacing_after=120))
-    if two_signers and signer2_name:
-        pg2_body.append(_para(
+    def _sig_date_line():
+        # Signature line with the Date field directly next to it, on one line.
+        return _para(
             _run('Signature of Merchant: ', bold=True, size=20)
-            + _run('_' * 50, size=20),
-            align='left', spacing_after=120))
-    pg2_body.append(_para(
-        _run('Date: ', bold=True, size=20)
-        + _run('_' * 25, size=20),
-        align='left', spacing_after=40))
+            + _run('_' * 32, size=20)
+            + _run('    Date: ', bold=True, size=20)
+            + _run('_' * 16, size=20),
+            align='left', spacing_after=120)
+    pg2_body.append(_sig_date_line())
+    if two_signers and signer2_name:
+        pg2_body.append(_sig_date_line())
 
     # Body row — spans 2 columns
     pg2_body_row = _row([
