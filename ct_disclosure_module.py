@@ -209,13 +209,14 @@ def build_ct_disclosure_bytes(data):
     total_fees = round(ach_fee + orig_fee, 2)
     disbursement = round(pp - total_fees, 2)
     finance_charge = round(pa - disbursement, 2)
-    # CT PA 23-201 Sec. 4: the "Reduction in Disbursement Amount to Pay Outstanding
-    # Balance of Existing Commercial Financing" line applies ONLY to paying off
-    # existing financing from the SAME provider -> that is Prior_Balance_Amount
-    # ("prior balance paid to us"). A Third_Party_Amount (payoff to ANOTHER funder)
-    # is "paid on the recipient's behalf" per Sec. 3 and stays inside the
-    # Disbursement Amount; it does NOT get a separate Section 4 line.
-    reduction_amt = round(_n(data, 'Prior_Balance_Amount'), 2)
+    # "Reduction in Disbursement Amount to Pay Outstanding Balance of Existing
+    # Commercial Financing" line. Both boxes are payoffs of existing commercial
+    # financing and belong here: Prior_Balance_Amount (payoff to us / same
+    # provider) and Third_Party_Amount (payoff to another funder on the recipient's
+    # behalf). Disbursement Amount stays pp - fees (gross, per Sec. 3); this line
+    # discloses how much of it goes to pay off existing financing, so the merchant
+    # nets disbursement minus this amount.
+    reduction_amt = round(_n(data, 'Prior_Balance_Amount') + _n(data, 'Third_Party_Amount'), 2)
 
     # Specified Percentage and frequency
     spec_pct_raw = data.get('Specified_Percentage', '0')
