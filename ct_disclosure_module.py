@@ -209,6 +209,13 @@ def build_ct_disclosure_bytes(data):
     total_fees = round(ach_fee + orig_fee, 2)
     disbursement = round(pp - total_fees, 2)
     finance_charge = round(pa - disbursement, 2)
+    # CT PA 23-201 Sec. 4: the "Reduction in Disbursement Amount to Pay Outstanding
+    # Balance of Existing Commercial Financing" line applies ONLY to paying off
+    # existing financing from the SAME provider -> that is Prior_Balance_Amount
+    # ("prior balance paid to us"). A Third_Party_Amount (payoff to ANOTHER funder)
+    # is "paid on the recipient's behalf" per Sec. 3 and stays inside the
+    # Disbursement Amount; it does NOT get a separate Section 4 line.
+    reduction_amt = round(_n(data, 'Prior_Balance_Amount'), 2)
 
     # Specified Percentage and frequency
     spec_pct_raw = data.get('Specified_Percentage', '0')
@@ -652,7 +659,7 @@ def build_ct_disclosure_bytes(data):
         '<w:insideV w:val="single" w:sz="4" w:space="0" w:color="000000"/>'
         '</w:tblBorders>'
         '</w:tblPr>'
-        + _renewal_inline_row('Reduction in Disbursement Amount to Pay Outstanding Balance of Existing Commercial Financing *', '$0.00')
+        + _renewal_inline_row('Reduction in Disbursement Amount to Pay Outstanding Balance of Existing Commercial Financing *', _fmt_currency(reduction_amt))
         + _renewal_inline_row('Total Amount New Financing Used to Payoff Prepayment Charges & Unpaid Interest on Existing Commercial Financing', '$0.00')
         + _renewal_inline_row('   \u2022 Prepayment Charges Payable to Provider', '$0.00')
         + _renewal_inline_row('   \u2022 Unpaid Interest Payable to Provider Not Forgiven at the time of Renewal', '$0.00')
