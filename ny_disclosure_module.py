@@ -263,7 +263,7 @@ def build_ny_disclosure_bytes(data):
     prior_balance = _n(data, 'Prior_Balance_Amount')
     third_party   = _n(data, 'Third_Party_Amount')
     direct_to_you = round(net_to_merchant - prior_balance - third_party, 2)
-    finance_charge = round(pa - pp, 2)
+    finance_charge = round(pa - net_to_merchant, 2)
 
     spec_pct_raw = data.get('Specified_Percentage', '0')
     try:
@@ -283,7 +283,7 @@ def build_ny_disclosure_bytes(data):
         period_label = 'business day'
 
     # APR — NY methodology (unit-period actuarial)
-    apr = _calculate_apr_ny(pp, pmt, ach_freq, pa) if (pp > 0 and pa > 0 and pmt > 0) else 0.0
+    apr = _calculate_apr_ny(net_to_merchant, pmt, ach_freq, pa) if (net_to_merchant > 0 and pa > 0 and pmt > 0) else 0.0
 
     # Estimated monthly cost: weekly × 52/12  OR  daily × 252/12 (252 biz days/yr)
     if is_weekly:

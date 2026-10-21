@@ -20,13 +20,13 @@ DISCLOSURE_STATES = {
     },
     'GA': {
         'name': 'Georgia',
-        'statute': 'Georgia SB 90 (O.C.G.A. \u00a7 10-1-393.15 et seq.)',
+        'statute': 'Georgia SB 90 (O.C.G.A. \u00a7 10-1-393.18 et seq.)',
         'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
         'kansas_labels': False,
     },
     'LA': {
         'name': 'Louisiana',
-        'statute': 'Louisiana R.S. 9:3578.1 et seq. (Louisiana Commercial Financing Disclosure Law)',
+        'statute': 'Louisiana R.S. 9:3137.1 et seq. (Louisiana Revenue-Based Financing Disclosure Law)',
         'not_loan': 'This transaction is a purchase and sale of future receivables and is NOT a loan. Amounts charged are NOT interest.',
         'kansas_labels': False,
     },
@@ -195,7 +195,7 @@ def build_disclosure_bytes(data):
     ded_fmt   = _fmt_currency(deducted_total)
     cost_fmt = _fmt_currency(cost)
 
-    spec_pct   = data.get('Specified_Percentage', '')
+    spec_pct   = str(data.get('Specified_Percentage', '') or '')
     weekly_amt = _fmt_currency(_n(data, 'Specific_Weekly_Amount'))
     ach_freq   = (data.get('ACH_Frequency', 'weekly') or 'weekly').lower()
 

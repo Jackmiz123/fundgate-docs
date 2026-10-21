@@ -285,7 +285,7 @@ def build_ca_disclosure_bytes(data):
     prior_balance = _n(data, 'Prior_Balance_Amount')
     third_party   = _n(data, 'Third_Party_Amount')
     direct_to_you = round(net_to_merchant - prior_balance - third_party, 2)
-    finance_charge = round(pa - pp, 2)
+    finance_charge = round(pa - net_to_merchant, 2)
 
     spec_pct_raw = data.get('Specified_Percentage', '0')
     try:
@@ -309,7 +309,7 @@ def build_ca_disclosure_bytes(data):
         period_label_cap = 'Daily'
 
     # Calculations — all guarded against zero inputs
-    apr = _calculate_apr(pp, pmt, ach_freq, pa) if (pp > 0 and pa > 0 and pmt > 0) else 0.0
+    apr = _calculate_apr(net_to_merchant, pmt, ach_freq, pa) if (net_to_merchant > 0 and pa > 0 and pmt > 0) else 0.0
     n_payments = int(round(pa / pmt)) if pmt > 0 else 0
     # Estimated monthly cost: weekly × 52/12 OR daily × 252/12 (252 biz days/yr)
     if is_weekly:
