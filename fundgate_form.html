@@ -446,34 +446,46 @@ select{text-transform:uppercase;}
           <p style="color:var(--muted);font-size:11px;margin:0 0 8px;">Enter a factor rate (e.g. 1.20) and the repurchase amount auto-calculates from Purchase Price. Or type the dollar amount directly.</p>
           <div style="display:flex;gap:8px;align-items:flex-end;">
             <div class="field-wrap" style="flex:1;margin:0;"><label>0–30 Days Factor</label><input type="text" id="factor_30" placeholder="1.20" oninput="calcAddendum()"></div>
-            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 0–30 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_30_Day_Amount" placeholder="12,000.00"></div></div>
+            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 0–30 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_30_Day_Amount" placeholder="12,000.00" oninput="renderAddendumPreview()"></div></div>
           </div>
         </div>
         <div class="field-wrap" style="margin-bottom:6px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="use_4tier_repurchase" onchange="toggle4Tier(this.checked)" style="width:18px;height:18px;cursor:pointer">
-            Use 4-tier repurchase schedule (31–45 / 46–60 days)
+            <input type="checkbox" id="include_mid_tier" checked onchange="toggleMidTier(this.checked)" style="width:18px;height:18px;cursor:pointer">
+            Include 31–60 day tier <span style="color:var(--muted);font-size:11px;">(turn off for 0–30 then After 30 days)</span>
           </label>
         </div>
-        <div id="tier3_block">
-          <div style="display:flex;gap:8px;align-items:flex-end;">
-            <div class="field-wrap" style="flex:1;margin:0;"><label>31–60 Factor</label><input type="text" id="factor_31_60" placeholder="1.25" oninput="calcAddendum()"></div>
-            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 31–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_60_Day_Amount" placeholder="12,500.00"></div></div>
+        <div id="midTierBlock">
+          <div class="field-wrap" style="margin-bottom:6px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="use_4tier_repurchase" onchange="toggle4Tier(this.checked)" style="width:18px;height:18px;cursor:pointer">
+              Use 4-tier repurchase schedule (31–45 / 46–60 days)
+            </label>
           </div>
-        </div>
-        <div id="tier4_block" style="display:none">
-          <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;">
-            <div class="field-wrap" style="flex:1;margin:0;"><label>31–45 Factor</label><input type="text" id="factor_31_45" placeholder="1.25" oninput="calcAddendum()"></div>
-            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 31–45 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_45_Day_Amount" placeholder="12,500.00"></div></div>
+          <div id="tier3_block">
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div class="field-wrap" style="flex:1;margin:0;"><label>31–60 Factor</label><input type="text" id="factor_31_60" placeholder="1.25" oninput="calcAddendum()"></div>
+              <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 31–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_60_Day_Amount" placeholder="12,500.00" oninput="renderAddendumPreview()"></div></div>
+            </div>
           </div>
-          <div style="display:flex;gap:8px;align-items:flex-end;">
-            <div class="field-wrap" style="flex:1;margin:0;"><label>46–60 Factor</label><input type="text" id="factor_46_60" placeholder="1.30" oninput="calcAddendum()"></div>
-            <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 46–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_46_60_Day_Amount" placeholder="13,000.00"></div></div>
+          <div id="tier4_block" style="display:none">
+            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;">
+              <div class="field-wrap" style="flex:1;margin:0;"><label>31–45 Factor</label><input type="text" id="factor_31_45" placeholder="1.25" oninput="calcAddendum()"></div>
+              <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 31–45 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_31_45_Day_Amount" placeholder="12,500.00" oninput="renderAddendumPreview()"></div></div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div class="field-wrap" style="flex:1;margin:0;"><label>46–60 Factor</label><input type="text" id="factor_46_60" placeholder="1.30" oninput="calcAddendum()"></div>
+              <div class="field-wrap" style="flex:2;margin:0;"><label>Repurchase: 46–60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="Repurchase_46_60_Day_Amount" placeholder="13,000.00" oninput="renderAddendumPreview()"></div></div>
+            </div>
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:flex-end;margin-top:8px;">
-          <div class="field-wrap" style="flex:1;margin:0;"><label>After 60 Factor</label><input type="text" id="factor_after_60" placeholder="1.40" oninput="calcAddendum()"></div>
-          <div class="field-wrap" style="flex:2;margin:0;"><label>After 60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="After_60_Day_Amount" placeholder="14,000.00"></div></div>
+          <div class="field-wrap" style="flex:1;margin:0;"><label id="after_factor_label">After 60 Factor</label><input type="text" id="factor_after_60" placeholder="1.40" oninput="calcAddendum()"></div>
+          <div class="field-wrap" style="flex:2;margin:0;"><label id="after_amount_label">After 60 Days</label><div class="input-prefix"><span>$</span><input type="text" id="After_60_Day_Amount" placeholder="14,000.00" oninput="renderAddendumPreview()"></div></div>
+        </div>
+        <div style="margin-top:12px;padding:12px;border:1px dashed var(--accent);border-radius:10px;background:var(--card);">
+          <div style="color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.04em;margin-bottom:6px;">LIVE PREVIEW — REPURCHASE SCHEDULE (what prints on the addendum)</div>
+          <div id="addendumPreview" style="font-size:12px;color:var(--text);line-height:1.55;white-space:pre-line;"></div>
         </div>
       </div>
     </div>
@@ -698,6 +710,7 @@ function calcAddendum() {
       document.getElementById(did).value = fmt(pp * factor);
     }
   }
+  renderAddendumPreview();
 }
 
 // Auto-calc Specific Weekly/Daily Amount from Purchased Amount and Term.
@@ -1034,6 +1047,46 @@ document.getElementById('includeAddendum').addEventListener('change', function()
 function toggle4Tier(enabled) {
     document.getElementById('tier3_block').style.display = enabled ? 'none' : 'block';
     document.getElementById('tier4_block').style.display = enabled ? 'block' : 'none';
+    renderAddendumPreview();
+}
+
+// Master toggle: include the 31-60 middle tier or not.
+function toggleMidTier(enabled) {
+    document.getElementById('midTierBlock').style.display = enabled ? 'block' : 'none';
+    // When the middle tier is off the final line reads "After 30 days".
+    const afl = document.getElementById('after_amount_label');
+    const ffl = document.getElementById('after_factor_label');
+    if (afl) afl.textContent = enabled ? 'After 60 Days' : 'After 30 Days';
+    if (ffl) ffl.textContent = enabled ? 'After 60 Factor' : 'After 30 Factor';
+    renderAddendumPreview();
+}
+
+// Live preview of the repurchase schedule — mirrors the wording the server
+// prints onto the addendum. Updates as toggles/amounts change.
+function renderAddendumPreview() {
+    const el = document.getElementById('addendumPreview');
+    if (!el) return;
+    const amt = (id) => {
+        const v = (document.getElementById(id)?.value || '').replace(/[^0-9.]/g,'');
+        if (!v) return '$________';
+        const n = parseFloat(v); if (isNaN(n)) return '$________';
+        return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    };
+    const includeMid = document.getElementById('include_mid_tier')?.checked;
+    const use4 = document.getElementById('use_4tier_repurchase')?.checked;
+    const lines = [];
+    lines.push('If within thirty (30) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + amt('Repurchase_30_Day_Amount') + ' less any payments made prior to the payment of the Repurchase Amount.');
+    if (includeMid) {
+        if (use4) {
+            lines.push('If between thirty-one (31) and forty-five (45) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + amt('Repurchase_31_45_Day_Amount') + ' less any payments made prior to the payment of the Repurchase Amount.');
+            lines.push('If between forty-six (46) and sixty (60) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + amt('Repurchase_46_60_Day_Amount') + ' less any payments made prior to the payment of the Repurchase Amount.');
+        } else {
+            lines.push('If between thirty-one (31) and sixty (60) days of the Payment of the Purchase price by the Purchaser, the Repurchase Amount shall be ' + amt('Repurchase_31_60_Day_Amount') + ' less any payments made prior to the payment of the Repurchase Amount.');
+        }
+    }
+    const afterWord = includeMid ? 'After 60 days' : 'After 30 days';
+    lines.push(afterWord + ', the Purchased Amount of ' + amt('After_60_Day_Amount') + ' as written in the Agreement shall be due and payable per the payment terms of the Agreement.');
+    el.textContent = lines.join('\n\n');
 }
 
 function fv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
@@ -1204,6 +1257,7 @@ function getData() {
     Repurchase_30_Day_Amount: fmtMoney(fv('Repurchase_30_Day_Amount')),
     Repurchase_31_60_Day_Amount: fmtMoney(fv('Repurchase_31_60_Day_Amount')),
     use_4tier_repurchase: document.getElementById('use_4tier_repurchase').checked,
+    include_mid_tier: document.getElementById('include_mid_tier').checked,
     Repurchase_31_45_Day_Amount: fmtMoney(fv('Repurchase_31_45_Day_Amount')),
     Repurchase_46_60_Day_Amount: fmtMoney(fv('Repurchase_46_60_Day_Amount')),
     After_60_Day_Amount: fmtMoney(fv('After_60_Day_Amount')),
@@ -1356,6 +1410,8 @@ window.addEventListener('load', () => {
   });
   // Clone-from-past-deal: if redirected from Past Deals with a deal in sessionStorage, populate form
   tryApplyClonedDeal();
+  // Render the addendum live preview on load.
+  if (typeof renderAddendumPreview === 'function') { try { renderAddendumPreview(); } catch (e) {} }
 });
 
 function tryApplyClonedDeal() {
@@ -1441,7 +1497,10 @@ function tryApplyClonedDeal() {
         if (typeof calcPaymentFromTerm === 'function') {
           try { calcPaymentFromTerm(); } catch (e) {}
         }
-        // Repurchase addendum: show 4-tier block if the cloned deal used it, then recompute amounts from the factors.
+        // Repurchase addendum: restore the mid-tier master toggle, then the 4-tier block.
+        if (typeof toggleMidTier === 'function') {
+          try { toggleMidTier(document.getElementById('include_mid_tier').checked); } catch (e) {}
+        }
         if (data.use_4tier_repurchase && typeof toggle4Tier === 'function') {
           try { toggle4Tier(true); } catch (e) {}
         }

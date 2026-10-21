@@ -297,6 +297,13 @@ def fill_docx(data):
     # each word as its own run, bold on the day numbers (thirty-one, (31), and,
     # forty-five, (45), days), bold + underline on the dollar amount.
     use_4tier = bool(data.get('use_4tier_repurchase'))
+    # Master toggle for the middle (31-60) repurchase tier. Default TRUE keeps
+    # the existing behavior for any payload that doesn't send the flag.
+    include_mid = data.get('include_mid_tier', True)
+    if include_mid in (False, 'false', 'False', 0, '0', None):
+        include_mid = False
+    else:
+        include_mid = True
     r31_45 = data.get('Repurchase_31_45_Day_Amount', '') or ''
     r46_60 = data.get('Repurchase_46_60_Day_Amount', '') or ''
     r31_60 = data.get('Repurchase_31_60_Day_Amount', '') or ''
@@ -343,7 +350,11 @@ def fill_docx(data):
                 'w:rsidRDefault="00D3482D" w:rsidP="00D3482D">' +
                 ppr + ''.join(runs) + '</w:p>')
 
-    if use_4tier and r31_45 and r46_60:
+    if not include_mid:
+        # No middle tier: schedule is 0-30 then after-30. The mid paragraph is
+        # removed and the final line's "After 60" becomes "After 30" below.
+        mid_xml = ''
+    elif use_4tier and r31_45 and r46_60:
         mid_xml = (
             _build_mid_para('thirty-one', '31', 'forty-five', '45', r31_45) +
             _build_mid_para('forty-six',  '46', 'sixty',      '60', r46_60)
@@ -362,6 +373,19 @@ def fill_docx(data):
         count=1,
         flags=re.DOTALL,
     )
+    # When the middle tier is off, the final addendum line reads "After 30 days"
+    # instead of "After 60 days". The phrase is split into runs: an "After" run,
+    # a space run, a "60" run, then a " days" run. The pattern below is anchored
+    # to that exact sequence (After ... 60 ... days, within a small span) so it
+    # can ONLY match the addendum line and never any other "60" in the contract.
+    if not include_mid:
+        doc = re.sub(
+            r'(<w:t>After</w:t>.{0,250}?<w:t>)60(</w:t>.{0,250}?<w:t>days</w:t>)',
+            r'\g<1>30\g<2>',
+            doc,
+            count=1,
+            flags=re.DOTALL,
+        )
     # P15 token is in its own paragraph — replace the whole paragraph to avoid blank page
     P15_PARA = ('<w:p w:rsidR="00D3482D" w:rsidRDefault="00D3482D">'
                 '<w:pPr><w:pStyle w:val="TableParagraph"/></w:pPr>'
