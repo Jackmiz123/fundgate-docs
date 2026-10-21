@@ -784,14 +784,14 @@ def build_ct_disclosure_bytes(data):
                 '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>'
                 '</Relationships>')
 
+    # Match the contract footer: just the page number, centered, 12pt.
     footer_xml = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         f'<w:ftr {NS}>'
         '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>'
-        '<w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">Page </w:t></w:r>'
-        '<w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r>'
-        '<w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
-        '<w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r>'
+        '<w:r><w:rPr><w:sz w:val="24"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r>'
+        '<w:r><w:rPr><w:sz w:val="24"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
+        '<w:r><w:rPr><w:sz w:val="24"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r>'
         '</w:p></w:ftr>')
 
     styles = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
