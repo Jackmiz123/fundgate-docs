@@ -736,6 +736,7 @@ def build_ct_disclosure_bytes(data):
     # ── Section properties (page margins ~0.75") ──────────────────────────
     sect_pr = (
         '<w:sectPr>'
+        '<w:footerReference w:type="default" r:id="rId2"/>'
         '<w:pgSz w:w="12240" w:h="15840"/>'
         '<w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080" '
         'w:header="720" w:footer="720" w:gutter="0"/>'
@@ -769,6 +770,7 @@ def build_ct_disclosure_bytes(data):
                      '<Default Extension="xml" ContentType="application/xml"/>'
                      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
                      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+                     '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>'
                      '</Types>')
 
     rels = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -779,7 +781,18 @@ def build_ct_disclosure_bytes(data):
     doc_rels = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
                 '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
                 '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+                '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>'
                 '</Relationships>')
+
+    footer_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<w:ftr {NS}>'
+        '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>'
+        '<w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">Page </w:t></w:r>'
+        '<w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r>'
+        '<w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
+        '<w:r><w:rPr><w:sz w:val="18"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r>'
+        '</w:p></w:ftr>')
 
     styles = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
               '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
@@ -797,5 +810,6 @@ def build_ct_disclosure_bytes(data):
         z.writestr('word/_rels/document.xml.rels', doc_rels)
         z.writestr('word/document.xml', document_xml)
         z.writestr('word/styles.xml', styles)
+        z.writestr('word/footer1.xml', footer_xml)
 
     return buf.getvalue()
