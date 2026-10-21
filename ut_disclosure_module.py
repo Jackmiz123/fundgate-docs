@@ -337,7 +337,7 @@ def build_ut_disclosure_bytes(data):
         _cell(pay_cell, R2, valign='top'),
     ], height_dxa=1100)
 
-    prepay1 = ('If you pay off the financing faster than required, you will/ will not be '
+    prepay1 = ('If you pay off the financing faster than required, you will not be '
                'required to pay additional fees.')
     prepay2 = ('If you pay off the financing faster than required, you will not receive a '
                'discount for prepayment. Unless there was an Early Pay-Off Addendum to your '

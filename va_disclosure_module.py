@@ -202,8 +202,11 @@ def build_va_disclosure_bytes(data):
 
     prior = _n(data, 'Prior_Balance_Amount')             # balances paid off at funding
 
-    # Disbursement Amount = amount actually paid to the merchant (net of fees AND prior balances)
-    disbursement = round(pp - total_fees - prior, 2)
+    # Disbursement Amount = total financing net of fees withheld at disbursement ONLY.
+    # Va. Code 6.2-2231(1) defines the disbursement amount as net of fees withheld;
+    # it is NOT netted against prior-balance/third-party payoffs, and 10VAC5-240-30
+    # bars adding fields the prescribed form does not require.
+    disbursement = round(pp - total_fees, 2)
     # Finance Charge = Total Repayment − (Purchase Price − Fees withheld)
     finance_charge = round(pa - (pp - total_fees), 2)
 
@@ -435,9 +438,6 @@ def build_va_disclosure_bytes(data):
     body.append(_para([_run('ADDITIONAL FEES WHICH MAY APPLY: See Schedule to the Contract', bold=True, size=20)],
                       align='left', indent_left=360, spacing_after=200))
 
-    body.append(_para([_run('* Which includes any balances currently outstanding being paid to FundGate, LLC, and/or third '
-                            'parties, in the sum of: ' + prior_fmt, size=20)],
-                      align='left', spacing_after=80))
     body.append(_para([_run('I acknowledge that I have received a copy of this disclosure form.', size=20)],
                       align='left', spacing_after=260))
 
