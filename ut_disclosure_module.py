@@ -366,6 +366,15 @@ def build_ut_disclosure_bytes(data):
                 spacing_before=120, spacing_after=240)
     dte = _para([_run('Date:  ', bold=True), _run(date_line)], spacing_after=120)
 
+    # Second signer gets its own signature + date line (UT has no state-prescribed
+    # form, so adding a line is permitted). Only when a real 2nd guarantor exists.
+    two_signers = bool(data.get('twoSigners', False)) and bool((data.get('Owner_Guarantor_2') or '').strip())
+    if two_signers:
+        sig2 = _para([_run('Signature of Merchant:  ', bold=True), _run(sig_line)],
+                     spacing_before=120, spacing_after=240)
+        dte2 = _para([_run('Date:  ', bold=True), _run(date_line)], spacing_after=120)
+        dte = dte + sig2 + dte2
+
     sect_pr = ('<w:sectPr>'
                '<w:pgSz w:w="12240" w:h="15840"/>'
                '<w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720" '
