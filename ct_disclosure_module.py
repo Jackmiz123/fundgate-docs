@@ -236,11 +236,10 @@ def build_ct_disclosure_bytes(data):
         freq_label_pg1 = 'Daily (Business Day)'
         freq_label_pg2_checked = 'daily'
 
-    # Estimated Time Period — expressed as the NUMBER OF PAYMENTS, matching the
-    # payment frequency. Payment_Term_Count is the number of payments the user
-    # enters on the form (weekly payments for weekly deals, business-day payments
-    # for daily deals). We show it as-is so a weekly deal reads as e.g. 32 weekly
-    # payments rather than 160 business days.
+    # Estimated Time Period — labeled with its unit matching the payment
+    # frequency: weekly deals show "<n> weeks", daily deals show "<n> days".
+    # Payment_Term_Count is the number of payments the user enters (weekly
+    # payments for weekly deals, business-day payments for daily deals).
     term_count_raw = data.get('Payment_Term_Count', '') or ''
     try:
         num_payments = int(float(str(term_count_raw).replace(',', '').strip()))
@@ -250,7 +249,7 @@ def build_ct_disclosure_bytes(data):
             num_payments = int(round(pa / pmt))
         else:
             num_payments = 0
-    term_count = num_payments
+    term_count = f'{num_payments} weeks' if is_weekly else f'{num_payments} days'
 
     # Average projected monthly payments
     if is_weekly:
